@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v3.9 | 條碼專攻版</title>
+    <title>By PÓSE IFL v4.0 | Quagga 掃描版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 指定穩定版本的掃碼庫 -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- ★★★ 更換核心：改用 Quagga2 (專攻條碼) ★★★ -->
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -72,7 +72,7 @@
         .hidden-step { display: none !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
         
-        /* 滑桿圓鈕修正：避免被切掉 */
+        /* 滑桿圓鈕修正 */
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
             background: #FFFFFF; 
@@ -104,6 +104,32 @@
         .value-box { background-color: #000; border: 2px solid #555; position: relative; }
         .vertical-text { writing-mode: vertical-lr; text-orientation: upright; letter-spacing: 0.5rem; }
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+
+        /* Quagga Scanner Styles */
+        #reader video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #reader canvas {
+            display: none; /* 隱藏 Quagga 的 canvas，只顯示 video */
+        }
+        /* 掃描線動畫 */
+        .scan-laser {
+            position: absolute;
+            top: 30%;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: #FFD700;
+            box-shadow: 0 0 10px #FFD700;
+            animation: laser 2s infinite alternate;
+            z-index: 20;
+        }
+        @keyframes laser {
+            from { top: 30%; }
+            to { top: 70%; }
+        }
     </style>
 </head>
 <body>
@@ -118,7 +144,7 @@
             <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl">確認進入</button>
         </div>
 
-        <!-- CAMERA SCANNER OVERLAY -->
+        <!-- CAMERA SCANNER OVERLAY (Quagga) -->
         <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
                 <span class="text-white font-bold">掃描條碼</span>
@@ -128,11 +154,22 @@
                     </svg>
                 </button>
             </div>
-            <div id="reader" class="w-full h-full bg-black"></div>
-            <!-- 掃描提示框調整為扁長條形，引導掃描一維條碼 -->
-            <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4">
-                <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準</p>
-                <p class="text-xs text-white/50">支援格式: Code 128 / Code 39 / EAN</p>
+            
+            <!-- 掃描區域 -->
+            <div class="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+                <div id="reader" class="w-full h-full absolute inset-0"></div>
+                <!-- 掃描框視覺 -->
+                <div class="absolute w-[80%] h-[30%] border-2 border-gold-m/70 rounded-lg z-20 pointer-events-none flex flex-col justify-between">
+                    <div class="w-full h-1 bg-gold-m/30"></div>
+                    <div class="w-full h-1 bg-gold-m/30"></div>
+                </div>
+                <div class="scan-laser"></div>
+            </div>
+
+            <!-- 掃描提示 -->
+            <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4 z-30">
+                <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準框線</p>
+                <p class="text-xs text-white/50">已切換至高解析度模式</p>
             </div>
         </div>
 
@@ -145,34 +182,28 @@
         <!-- === SCENE 1: SCAN === -->
         <div id="scene_scan" class="step-container h-screen flex flex-col px-6 bg-cocoa-dark relative">
             
-            <!-- 頂部 User 資訊 -->
             <div class="absolute top-4 left-4 text-xs text-cream-dim z-10">
                 User: <span id="currentUserDisplay" class="text-gold-m font-bold">...</span>
                 <button onclick="logout()" class="ml-2 text-white/30 underline">更換</button>
             </div>
 
-            <!-- 1. 標題 -->
             <div class="mt-16 mb-6 text-center shrink-0">
                 <h1 class="text-4xl font-black text-cream mb-2">貨號輸入</h1>
                 <p class="text-sm text-cream-dim uppercase tracking-widest">請掃描商品條碼</p>
             </div>
 
-            <!-- 2. 中間：大相機按鈕 (主角) -->
             <div class="flex-1 flex flex-col items-center justify-center mb-4">
                 <button onclick="startScanner()" class="w-64 h-64 bg-cocoa-card border-4 border-gold-m/50 rounded-full flex flex-col items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.15)] active:scale-95 transition-all group hover:border-gold-m animate-pulse">
-                    
                     <div class="w-24 h-24 mb-4 text-cream group-hover:text-gold-m transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
                         </svg>
                     </div>
-                    
                     <span class="text-2xl font-black text-white tracking-widest group-hover:text-gold-m">點我掃描</span>
                 </button>
             </div>
 
-            <!-- 3. 底部：手動輸入區 (垂直排列) -->
             <div class="mb-12 w-full shrink-0 flex flex-col gap-3">
                 <div class="flex items-center gap-4 mb-1">
                     <div class="h-px bg-white/10 flex-1"></div>
@@ -285,7 +316,6 @@
                         <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
                         
-                        <!-- 修正過的體重滑桿 -->
                         <div class="absolute bottom-0 left-0 right-10 h-20 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-5 z-10">
                             <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
                             <input type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="document.getElementById('wValDispGrid').innerText=this.value">
@@ -412,73 +442,70 @@
             }
         }
 
-        // --- SCANNER LOGIC ---
-        let html5QrcodeScanner = null;
+        // --- QUAGGA SCANNER LOGIC ---
+        let isScanning = false;
 
         function startScanner() {
+            if (isScanning) return;
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('scannerOverlay').classList.add('flex');
             
-            if (typeof Html5Qrcode === 'undefined') {
-                alert("相機模組尚未加載，請檢查網路連線");
-                stopScanner();
-                return;
-            }
+            // 初始化 Quagga
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#reader'), // 指向容器
+                    constraints: {
+                        facingMode: "environment", // 使用後置鏡頭
+                        width: { min: 640, ideal: 1280, max: 1920 }, // 偏好高解析度
+                        height: { min: 480, ideal: 720, max: 1080 },
+                        aspectRatio: { min: 1, max: 2 }
+                    }
+                },
+                decoder: {
+                    // ★★★ 專攻條碼：Code 128, Code 39, EAN (不含 QR) ★★★
+                    readers: ["code_128_reader", "ean_reader", "code_39_reader", "ean_8_reader"]
+                },
+                locate: true, // 開啟定位功能，幫助找到條碼位置
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("相機啟動失敗: " + err);
+                    stopScanner();
+                    return;
+                }
+                console.log("Initialization finished. Ready to start");
+                Quagga.start();
+                isScanning = true;
+            });
 
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            
-            // ★★★ 條碼掃描優化 ★★★
-            // 1. qrbox 設為扁長型 (300x100) 以適應條碼
-            // 2. formatsToSupport 僅支援 1D 條碼，排除 QR Code，加快速度
-            const config = { 
-                fps: 20, // 提高掃描幀率
-                qrbox: { width: 300, height: 100 }, 
-                aspectRatio: 1.0,
-                formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.UPC_A
-                ] 
-            };
-            
-            html5QrcodeScanner.start(
-                { facingMode: "environment" }, 
-                config, 
-                onScanSuccess, 
-                onScanFailure
-            ).catch(err => {
-                console.error("Camera Error:", err);
-                alert("無法啟動相機。請確認允許權限。錯誤：" + err);
-                stopScanner();
+            // 監聽掃描結果
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                console.log("Barcode detected and processed : [" + code + "]", result);
+                
+                // 簡單驗證：至少要有 5 碼才算有效
+                if (code && code.length > 5) {
+                    stopScanner();
+                    document.getElementById('inputSKU').value = code;
+                    handleScan(code);
+                }
             });
         }
 
         function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    html5QrcodeScanner.clear();
-                    document.getElementById('scannerOverlay').classList.add('hidden');
-                    document.getElementById('scannerOverlay').classList.remove('flex');
-                }).catch(err => {
-                    console.log("Failed to stop scanner");
-                    document.getElementById('scannerOverlay').classList.add('hidden');
-                    document.getElementById('scannerOverlay').classList.remove('flex');
-                });
-            } else {
-                document.getElementById('scannerOverlay').classList.add('hidden');
-                document.getElementById('scannerOverlay').classList.remove('flex');
+            if (isScanning) {
+                Quagga.stop();
+                isScanning = false;
             }
+            document.getElementById('scannerOverlay').classList.add('hidden');
+            document.getElementById('scannerOverlay').classList.remove('flex');
         }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            console.log(`Scan result: ${decodedText}`, decodedResult);
-            stopScanner(); 
-            document.getElementById('inputSKU').value = decodedText; 
-            handleScan(decodedText);
-        }
-
-        function onScanFailure(error) {}
 
         // --- DATA ---
         const personas = {
@@ -495,7 +522,7 @@
             }
         };
 
-        // ★★★ 更新後的數據庫 ★★★
+        // ★★★ 資料庫更新：支援更長的文字 ★★★
         const FAIL_DB = {
             '六大焦慮': ['怕不專業、不會搭', '束縛感、怕太累', '不實穿、怕難顧', '怕沒質感、沒氣場', '怕顯胖、裝嫩/顯老', '捨不得、配不上'],
             '五大痛點': ['副乳、蝴蝶袖', '虎背熊腰、圓肩厚身', '胃凸、顯小腹', '梨形身材、骨盆寬', '臀部扁平、下垂', '蘿蔔O型、顯腿粗'],
@@ -525,10 +552,10 @@
             const container = document.getElementById(targetId);
             const style = type === 'fail' ? 'fail-check' : 'pass-check';
             Object.keys(data).forEach(cat => {
-                // ★★★ 修改這裡：支援多行文字顯示 ★★★
                 const items = data[cat].map((item, i) => `
                     <div class="relative h-full">
                         <input type="checkbox" id="${type}_${cat}_${i}" class="${style} hidden peer">
+                        <!-- 增加 min-h-[64px] 和 break-words 以支援長文字換行 -->
                         <label for="${type}_${cat}_${i}" class="flex items-center justify-center text-center py-3 px-2 bg-cocoa-card border-2 border-white/10 rounded-lg text-base font-bold text-cream-dim cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none min-h-[64px] leading-tight break-words">${item}</label>
                     </div>
                 `).join('');
@@ -552,7 +579,7 @@
             // 1. 去除橫線
             val = val.replace(/-/g, '');
 
-            // 2. 條碼邏輯: 如果長度超過7碼，只取前7碼 (252020188F -> 2520201)
+            // 2. 條碼邏輯
             let sku = val;
             if (val.length > 7) {
                 sku = val.substring(0, 7);
