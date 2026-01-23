@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v2.7 | 視力友善版</title>
+    <title>By PÓSE IFL v2.8 | 最終發布版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -12,11 +12,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
     <script>
-        // ==========================================
-        // ★★★ 請將您的 Google Apps Script 網址貼在下方引號內 ★★★
-        // 例如: 'https://script.google.com/macros/s/AKfycbx.../exec'
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbEdJay-GyJkBSYnsrpKhiJpIskLwZkGaql4LdAJ-aixGgXB1t_vwUFiDfkfwWGREU/exec'; 
-        // ==========================================
+        // =========================================================================
+        // ★★★ 【重要設定】 請將您的 Google Apps Script 網址貼在下方引號內 ★★★
+        // =========================================================================
+        
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBi0qaM-8ZB-6YoV7tLnXiskkqPUcLZSXWVDZjxzl2xnNBEGUrHIGrcBjS1B3jFzDM/exec'; 
+        
+        // 例如： const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx.../exec';
+        // 如果這個是空的，系統只會顯示成功畫面，但不會真的寫入資料。
+        // =========================================================================
 
         tailwind.config = {
             theme: {
@@ -252,7 +256,7 @@
                 <span class="text-lg font-bold text-white">客戶設定</span>
                 <div class="flex items-center gap-3">
                     <span class="text-3xl font-black text-gold-m" id="charSKU">...</span>
-                    <!-- 這裡新增重置按鈕 -->
+                    <!-- 重置按鈕 -->
                     <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors">
                         <i class="fas fa-redo-alt"></i>
                     </button>
@@ -506,11 +510,11 @@
         }
 
         function submitLog(type) {
+            // 1. 蒐集資料
             const container = type === 'FAIL' ? 'failCats' : 'passCats';
             const checks = document.querySelectorAll(`#${container} input:checked`);
             if(checks.length === 0) { alert('請至少勾選一個原因'); return; }
 
-            // 1. 蒐集資料
             const sku = document.getElementById('inputSKU').value.toUpperCase() || 'PA-24SS-001';
             const persona = document.querySelector('input[name="persona"]:checked')?.value || 'Unknown';
             const scene = document.querySelector('input[name="rgb"]:checked')?.value || 'Unknown';
@@ -528,7 +532,7 @@
             // 3. 準備 Payload
             const payload = {
                 sku: sku,
-                result: type,
+                result: type, // "PASS" or "FAIL"
                 persona: persona,
                 scene: scene,
                 height: height,
@@ -538,26 +542,27 @@
                 productInfo: productInfo
             };
 
-            // 4. 發送至 Google Apps Script (如果有點設定 URL)
+            console.log('Sending Payload:', payload);
+
+            // 4. 發送至 Google Apps Script
             if (GOOGLE_SCRIPT_URL) {
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // 關鍵：避免 CORS 錯誤，雖然拿不到回傳值，但能成功送出
+                    mode: 'no-cors', // 允許跨域請求
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 }).then(() => {
-                    // 成功後執行 UI 更新
+                    console.log('Request Sent Successfully');
                     showSuccessUI(type);
                 }).catch(err => {
+                    console.error('Fetch Error:', err);
                     alert("上傳失敗，請檢查網路或是 URL");
-                    console.error(err);
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 });
             } else {
-                // 如果沒有設定 URL，直接模擬成功 (測試用)
-                console.log("模擬發送資料:", payload);
+                console.log("No URL set. Simulating success.");
                 setTimeout(() => showSuccessUI(type), 1000);
             }
         }
@@ -584,7 +589,7 @@
             document.getElementById('scene_log_fail').classList.add('hidden-step');
             document.getElementById('scene_log_pass').classList.add('hidden-step');
             document.getElementById('scene_success').classList.remove('hidden-step');
-            document.getElementById('loadingOverlay').classList.add('hidden'); // 隱藏 Loading
+            document.getElementById('loadingOverlay').classList.add('hidden');
             
             setTimeout(() => icon.classList.remove('scale-0'), 100);
         }
