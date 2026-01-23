@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>By PÓSE IFL v2.7 | 視力友善版</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        // ==========================================
+        // ★★★ 請將您的 Google Apps Script 網址貼在下方引號內 ★★★
+        // 例如: 'https://script.google.com/macros/s/AKfycbx.../exec'
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbEdJay-GyJkBSYnsrpKhiJpIskLwZkGaql4LdAJ-aixGgXB1t_vwUFiDfkfwWGREU/exec'; 
+        // ==========================================
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cocoa-dark': '#1C1C1E',
+                        'cocoa-card': '#2C2C2E',
+                        'cream': '#FFFFFF',
+                        'cream-dim': '#D1D1D6',
+                        'gold-m': '#FFD700',
+                        'jade-frame': '#00A86B',      
+                        'blue-slider': '#60A5FA',     
+                        'rose-m': '#FF8FA3', 
+                        'rose-deep': '#E11D48',
+                        'jade-m': '#66D2AA', 
+                        'jade-deep': '#059669', 
+                        'scene-blue': '#81BECE', 
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0,0,0,0.5)',
+                        'text': '0 2px 4px rgba(0,0,0,0.8)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: manipulation; 
+            background-color: #1C1C1E; 
+            color: #FFFFFF; 
+            font-size: 18px;
+            overflow-x: hidden;
+            overflow-y: auto; 
+        }
+        
+        .btn-touch { transition: transform 0.1s; }
+        .btn-touch:active { transform: scale(0.96); }
+        .hidden-step { display: none !important; }
+        input::placeholder { color: #666; font-weight: 500; }
+
+        /* === 滑桿樣式 === */
+        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; 
+            background: #FFFFFF; 
+            border: 4px solid #60A5FA;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.8); 
+            border-radius: 50%; 
+            height: 32px; width: 32px; 
+            margin-top: -12px;
+        }
+        input[type=range][orient=vertical]::-webkit-slider-thumb {
+             margin-top: 0;
+             margin-left: -12px;
+        }
+        .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
+        
+        input[type=range][orient=vertical] { 
+            writing-mode: bt-lr; 
+            -webkit-appearance: slider-vertical; 
+            width: 100%; height: 100%; 
+        }
+        input[type=range][orient=vertical]::-webkit-slider-runnable-track { 
+            width: 8px; 
+            background: rgba(255,255,255,0.3); 
+            border-radius: 4px; 
+            backdrop-filter: blur(2px);
+        }
+
+        /* === 按鈕樣式 === */
+        .btn-persona { 
+            background: #423F30; border: 1px solid #555;
+            transition: all 0.2s; color: #CCC;
+        }
+        .chk-persona:checked + .btn-persona { 
+            background-color: #FFD700; color: #1C1C1E; border-color: #FFD700; 
+            font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); 
+        }
+
+        .btn-scene { 
+            background: #2C3E50; border: 1px solid #555;
+            transition: all 0.2s; color: #CCC;
+        }
+        .chk-scene:checked + .btn-scene { 
+            background-color: #81BECE; color: #1C1C1E; border-color: #81BECE; 
+            font-weight: 900; box-shadow: 0 0 10px rgba(129, 190, 206, 0.4); 
+        }
+
+        .fail-check:checked + label { background-color: #FF8FA3; color: #000; font-weight: 900; border-color: #FF8FA3; }
+        .pass-check:checked + label { background-color: #66D2AA; color: #000; font-weight: 900; border-color: #66D2AA; }
+
+        .flat-input {
+            background: transparent; border: none; border-bottom: 3px solid #48484A;
+            color: #FFD700; font-weight: 900; text-align: center; border-radius: 0;
+        }
+        .flat-input:focus { outline: none; border-bottom-color: #FFD700; }
+
+        /* Sticky Layouts */
+        .sticky-footer {
+            position: sticky; bottom: 0; background: #1C1C1E; 
+            padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 50;
+        }
+        .sticky-header {
+            position: sticky; top: 0; background: #1C1C1E; z-index: 30;
+            padding-top: 0.5rem; padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .value-box {
+            background-color: #000;
+            border: 2px solid #555;
+            position: relative;
+        }
+
+        .vertical-text {
+            writing-mode: vertical-lr;
+            text-orientation: upright;
+            letter-spacing: 0.5rem;
+        }
+        
+        /* 文字黑色描邊 */
+        .text-outline {
+            text-shadow: 
+                2px 2px 0 #000,
+               -1px -1px 0 #000,  
+                1px -1px 0 #000,
+               -1px  1px 0 #000,
+                1px  1px 0 #000;
+        }
+
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans select-none bg-cocoa-dark">
+
+    <main class="flex-1 relative w-full max-w-md mx-auto">
+
+        <!-- LOADING -->
+        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden">
+            <div class="w-16 h-16 border-8 border-white/20 border-t-gold-m rounded-full animate-spin mb-6"></div>
+            <p id="loadingText" class="text-2xl font-bold text-gold-m">讀取中...</p>
+        </div>
+
+        <!-- === SCENE 1: SCAN === -->
+        <div id="scene_scan" class="step-container h-screen flex flex-col justify-center px-6">
+            <div class="w-full text-center space-y-8">
+                <div>
+                    <h1 class="text-4xl font-black text-cream mb-2">裝備識別</h1>
+                    <p class="text-lg text-cream-dim">請輸入貨號</p>
+                </div>
+                <div class="w-full">
+                    <input type="text" id="inputSKU" placeholder="輸入 PA-..." 
+                           class="w-full flat-input text-5xl py-4 uppercase placeholder:text-4xl"
+                           onkeyup="if(event.key==='Enter') handleScan(this.value)">
+                </div>
+                <button onclick="simulateScan()" class="w-full py-6 bg-cocoa-card border-2 border-white/20 rounded-xl text-cream font-bold text-2xl tracking-widest hover:border-gold-m hover:text-gold-m transition-colors btn-touch">
+                    模擬掃描 (DEMO)
+                </button>
+            </div>
+        </div>
+
+        <!-- === SCENE 2: EQUIPMENT CARD (First Page) === -->
+        <div id="scene_stats" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
+            <!-- 1. 貨號 (Sticky) -->
+            <div class="sticky-header px-4 text-center flex items-center justify-center gap-3">
+                <h1 class="text-5xl font-black text-white tracking-tighter leading-none" id="statsSKU">PA-001</h1>
+                <span class="inline-block bg-gold-m text-cocoa-dark text-xs font-black px-1.5 py-0.5 rounded">SSR</span>
+                <!-- 新增重置按鈕 -->
+                <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors absolute right-4">
+                    <i class="fas fa-redo-alt"></i>
+                </button>
+            </div>
+
+            <!-- 2. 數據面板 (Top) -->
+            <div class="px-4 py-2 bg-cocoa-dark z-20">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-cocoa-card rounded-lg p-2 text-center border border-white/10">
+                        <div class="text-xs text-cream-dim font-bold">RGB</div>
+                        <div class="text-2xl font-black text-gold-m" id="statsRGB">R</div>
+                    </div>
+                    <div class="bg-cocoa-card rounded-lg p-2 text-center border border-white/10">
+                        <div class="text-xs text-cream-dim font-bold">骨架</div>
+                        <div class="text-2xl font-black text-white" id="statsHitvox">挺</div>
+                    </div>
+                    <div class="bg-cocoa-card rounded-lg p-1 flex flex-col justify-center border border-white/10 gap-0.5">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="text-[10px] text-rose-m font-bold">ATK</span>
+                            <span class="text-sm text-white font-bold" id="statsPain">...</span>
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <span class="text-[10px] text-jade-m font-bold">DEF</span>
+                            <span class="text-sm text-white font-bold" id="statsAnxiety">...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 圖片 + 壓字 (必買理由) -->
+            <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
+                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" onerror="this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=No+Image'">
+                
+                <!-- 壓字與 Switch -->
+                <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
+                    <!-- 左下角：設計師交付 (文字壓圖) -->
+                    <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[80%]">
+                        <p class="text-3xl font-black text-white text-outline leading-tight drop-shadow-lg" id="statsBrief">"..."</p>
+                    </div>
+                    <!-- 右下角：Switch -->
+                    <div>
+                         <span class="text-xs text-cream-dim font-bold block text-right text-shadow-sm">SWITCH</span>
+                         <span class="text-4xl font-black text-gold-m drop-shadow-lg text-outline" id="statsSwitch">W</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. 底部按鈕 -->
+            <div class="sticky-footer flex gap-3">
+                <button onclick="goToCharSetup()" class="w-full py-5 bg-gold-m text-cocoa-dark text-2xl font-black rounded-xl shadow-soft btn-touch flex items-center justify-center gap-3"><i class="fas fa-tshirt"></i> <span>為客著裝</span></button>
+            </div>
+        </div>
+
+        <!-- === SCENE 3: CHARACTER SETUP (Second Page) === -->
+        <div id="scene_char" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark">
+            
+            <div class="sticky-header px-4 flex justify-between items-center shrink-0">
+                <span class="text-lg font-bold text-white">客戶設定</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl font-black text-gold-m" id="charSKU">...</span>
+                    <!-- 這裡新增重置按鈕 -->
+                    <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors">
+                        <i class="fas fa-redo-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. 4x2 控制面板 -->
+            <div class="p-2 bg-cocoa-dark">
+                <div class="grid grid-cols-4 gap-1 mb-1">
+                    <div class="col-span-3 grid grid-cols-3 gap-1 h-14">
+                        <div class="relative h-full"><input type="radio" name="persona" value="Leader" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">LEADER</span></label></div>
+                        <div class="relative h-full"><input type="radio" name="persona" value="Self" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">SELF</span></label></div>
+                        <div class="relative h-full"><input type="radio" name="persona" value="CP" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('CP')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">CP</span></label></div>
+                    </div>
+                    <div class="col-span-1 h-14 value-box rounded flex flex-col items-center justify-center"><span class="text-[10px] text-blue-slider font-bold">身高 cm</span><span class="text-2xl font-black text-white leading-none"><span id="hValDispGrid">160</span></span></div>
+
+                    <div class="col-span-3 grid grid-cols-3 gap-1 h-14">
+                        <div class="relative h-full"><input type="radio" name="rgb" value="Root" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">ROOT</span></label></div>
+                        <div class="relative h-full"><input type="radio" name="rgb" value="Glow" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">GLOW</span></label></div>
+                        <div class="relative h-full"><input type="radio" name="rgb" value="Breathe" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">BREATHE</span></label></div>
+                    </div>
+                    <div class="col-span-1 h-14 value-box rounded flex flex-col items-center justify-center"><span class="text-[10px] text-blue-slider font-bold">體重 kg</span><span class="text-2xl font-black text-white leading-none"><span id="wValDispGrid">50</span></span></div>
+                </div>
+
+                <!-- 2. 照片與按鈕區 -->
+                <div class="grid grid-cols-4 gap-1 h-auto items-stretch">
+                    <!-- Left Block: Photo + Sliders -->
+                    <div class="col-span-3 aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft">
+                        <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
+                        <div class="absolute bottom-0 left-0 right-10 h-16 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-2 z-10">
+                            <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
+                            <input type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="document.getElementById('wValDispGrid').innerText=this.value">
+                        </div>
+                        <div class="absolute top-0 bottom-0 right-0 w-14 bg-gradient-to-l from-black/90 to-transparent flex flex-col items-center justify-between py-4 z-10">
+                            <span class="text-[10px] text-white/70 font-bold">180</span>
+                            <div class="h-full py-2"><input type="range" orient="vertical" min="150" max="180" value="160" oninput="document.getElementById('hValDispGrid').innerText=this.value"></div>
+                            <span class="text-[10px] text-white/70 font-bold">150</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Block: Start Button -->
+                    <div class="col-span-1 h-full">
+                        <button onclick="confirmChar()" class="w-full h-full bg-cream text-cocoa-dark rounded-lg shadow-soft btn-touch flex flex-col items-center justify-center border-2 border-white/20 hover:bg-white transition-colors">
+                            <span class="vertical-text text-xl font-black">試穿銷售結果</span>
+                            <i class="fas fa-arrow-down mt-2 text-gold-m animate-bounce"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. 新增商品資訊框 (照片下方) -->
+                <div class="mt-2 w-full bg-cocoa-card border border-white/20 rounded-lg p-3">
+                    <div class="flex justify-between items-center mb-2 border-b border-white/5 pb-2">
+                        <span class="text-xs text-cream-dim">RGB <span class="text-gold-m font-bold text-lg ml-1" id="infoRGB">R</span></span>
+                        <span class="text-xs text-cream-dim">SWITCH <span class="text-gold-m font-bold text-lg ml-1" id="infoSwitch">W</span></span>
+                        <span class="text-xs text-cream-dim">骨架 <span class="text-white font-bold text-lg ml-1" id="infoHitvox">挺</span></span>
+                    </div>
+                    <div class="border-l-4 border-gold-m pl-2">
+                        <p class="text-lg font-bold text-white leading-snug" id="infoBrief">...</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- === SCENE 4: VERDICT (Third Page) === -->
+        <div id="scene_verdict" class="step-container hidden-step min-h-screen flex flex-col p-4 bg-cocoa-dark">
+            <h2 class="text-3xl font-black text-cream text-center mt-4 mb-6">結果紀錄</h2>
+            <div class="flex-1 flex flex-col gap-4 justify-center pb-10">
+                <!-- PASS BUTTON (Top) -->
+                <button onclick="goToLog('PASS')" class="flex-1 bg-jade-deep border-4 border-jade-m rounded-2xl flex flex-col items-center justify-center gap-2 btn-touch shadow-soft">
+                    <i class="fas fa-check text-6xl text-white mb-2"></i>
+                    <span class="text-4xl font-black text-white tracking-widest">成 交</span>
+                    <span class="text-sm font-bold text-white/70 opacity-80 uppercase tracking-widest">DEAL / PASS</span>
+                </button>
+
+                <!-- FAIL BUTTON (Bottom) -->
+                <button onclick="goToLog('FAIL')" class="flex-1 bg-rose-deep border-4 border-rose-m rounded-2xl flex flex-col items-center justify-center gap-2 btn-touch shadow-soft">
+                    <i class="fas fa-times text-6xl text-white mb-2"></i>
+                    <span class="text-4xl font-black text-white tracking-widest">排除錯誤</span>
+                    <span class="text-sm font-bold text-white/70 opacity-80 uppercase tracking-widest">FAIL DIAGNOSIS</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- === SCENE 5: LOG FAIL === -->
+        <div id="scene_log_fail" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
+            <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-rose-m bg-cocoa-dark z-30">
+                <span class="text-2xl font-black text-rose-m">FAIL 原因</span>
+                <button onclick="backToVerdict()" class="px-4 py-2 bg-white/10 rounded-lg text-white font-bold text-lg">返回</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="failCats"></div>
+                <div class="mt-8">
+                    <label class="text-xl text-white font-bold mb-3 block">顧客原話 / 筆記</label>
+                    <div class="flex gap-2">
+                        <textarea id="failNote" class="flex-1 bg-cocoa-card border-2 border-white/20 rounded-xl p-4 text-xl text-white h-32 focus:border-rose-m outline-none placeholder:text-gray-500" placeholder="點此輸入..."></textarea>
+                        <button onclick="startDictation('failNote')" class="w-20 bg-rose-m text-cocoa-dark rounded-xl flex items-center justify-center btn-touch"><i class="fas fa-microphone text-3xl"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky-footer px-4"><button onclick="submitLog('FAIL')" class="w-full py-5 bg-rose-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄 (FAIL)</button></div>
+        </div>
+
+        <!-- === SCENE 5: LOG PASS === -->
+        <div id="scene_log_pass" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
+            <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-jade-m bg-cocoa-dark z-30">
+                <span class="text-2xl font-black text-jade-m">PASS 原因</span>
+                <button onclick="backToVerdict()" class="px-4 py-2 bg-white/10 rounded-lg text-white font-bold text-lg">返回</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="passCats"></div>
+            </div>
+            <div class="sticky-footer px-4"><button onclick="submitLog('PASS')" class="w-full py-5 bg-jade-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄 (PASS)</button></div>
+        </div>
+
+        <!-- === SCENE 6: SUCCESS === -->
+        <div id="scene_success" class="step-container hidden-step min-h-screen flex flex-col items-center justify-center p-6 bg-cocoa-dark text-center">
+            <div id="finalIcon" class="w-32 h-32 rounded-full flex items-center justify-center mb-8 text-7xl shadow-soft scale-0 transition-transform duration-500"></div>
+            <h2 class="text-4xl font-black text-white mb-6" id="finalTitle">已儲存</h2>
+            <div class="w-full p-6 bg-cocoa-card border-2 border-white/10 rounded-2xl shadow-soft mb-10">
+                <p class="text-sm text-cream-dim uppercase mb-2">System Message</p>
+                <p class="text-2xl font-bold leading-relaxed text-white" id="finalMsg">...</p>
+            </div>
+            <button onclick="resetApp()" class="w-full py-6 bg-white/10 text-white font-black text-2xl tracking-widest rounded-xl hover:bg-white/20 transition-colors border-2 border-white/20">下一位 (NEXT)</button>
+        </div>
+
+    </main>
+
+    <script>
+        // --- DATA ---
+        const personas = {
+            'Leader': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=600&fit=crop', 
+            'Self':   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&h=600&fit=crop',
+            'CP':     'https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=600&h=600&fit=crop'
+        };
+        const productDB = {
+            'PA-24SS-001': { 
+                img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&h=600&fit=crop', 
+                brief: '視覺少3公分神褲，針對梨形修正。',
+                rgb: 'R+B', switch: 'S', hitvox: '挺',
+                atk: '消假胯寬', def: '防撐不住'
+            }
+        };
+        const FAIL_DB = {
+            '六大焦慮': ['怕出錯', '撐不住', '會後悔', '不像我', '我是誰', '不值得'],
+            '五大痛點': ['顯假胯', '顯背厚', '顯小腹', '顯手臂', '顯腿粗'],
+            '外部因素': ['價格高', '顏色差', '沒尺寸', '純逛逛']
+        };
+        const PASS_DB = {
+            '六大態度': ['掌握感', '有支撐', '不後悔', '有界線', '是本我', '很值得'],
+            '痛點解決': ['修假胯', '薄背', '收腹', '藏手臂', '長腿'],
+            '成交驅動': ['設計師', '櫃姐推', '急用', '折扣']
+        };
+        const QUOTES = {
+            FAIL: ["Fail 是積累。", "排除錯誤。", "再接再厲。"],
+            PASS: ["漂亮是選擇。", "體面是底氣。", "信任直覺。"]
+        };
+
+        // --- INIT ---
+        window.onload = function() {
+            renderList('failCats', FAIL_DB, 'fail');
+            renderList('passCats', PASS_DB, 'pass');
+            document.getElementById("inputSKU").addEventListener("keyup", function(event) {
+                if (event.key === "Enter") handleScan(this.value);
+            });
+        };
+
+        function renderList(targetId, data, type) {
+            const container = document.getElementById(targetId);
+            const style = type === 'fail' ? 'fail-check' : 'pass-check';
+            Object.keys(data).forEach(cat => {
+                const items = data[cat].map((item, i) => `
+                    <div class="relative">
+                        <input type="checkbox" id="${type}_${cat}_${i}" class="${style} hidden peer">
+                        <label for="${type}_${cat}_${i}" class="block text-center py-4 px-2 bg-cocoa-card border-2 border-white/10 rounded-lg text-lg text-cream-dim font-bold cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none">${item}</label>
+                    </div>
+                `).join('');
+                container.innerHTML += `
+                    <div class="mb-6">
+                        <div class="flex items-center gap-3 mb-3 pl-1">
+                            <span class="w-3 h-3 rounded-full ${type==='fail'?'bg-rose-m':'bg-jade-m'}"></span>
+                            <span class="text-xl text-white font-black tracking-widest">${cat}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">${items}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- LOGIC ---
+        function handleScan(val) {
+            if(!val) return;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            document.getElementById('loadingText').innerText = "讀取中...";
+            const data = productDB['PA-24SS-001'] || productDB[Object.keys(productDB)[0]];
+            setTimeout(() => {
+                // Update Scene 2 (Stats)
+                document.getElementById('statsImg').src = data.img;
+                document.getElementById('statsSKU').innerText = val.toUpperCase();
+                document.getElementById('charSKU').innerText = val.toUpperCase();
+                document.getElementById('statsBrief').innerText = `"${data.brief}"`;
+                document.getElementById('statsRGB').innerText = data.rgb;
+                document.getElementById('statsSwitch').innerText = data.switch;
+                document.getElementById('statsHitvox').innerText = data.hitvox;
+                document.getElementById('statsPain').innerText = data.atk;
+                document.getElementById('statsAnxiety').innerText = data.def;
+
+                // Update Scene 3 (Character Info Box)
+                document.getElementById('infoRGB').innerText = data.rgb;
+                document.getElementById('infoSwitch').innerText = data.switch;
+                document.getElementById('infoHitvox').innerText = data.hitvox;
+                document.getElementById('infoBrief').innerText = `"${data.brief}"`;
+
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                switchScene('scene_scan', 'scene_stats');
+            }, 600);
+        }
+        function simulateScan() { const i = document.getElementById('inputSKU'); i.value='PA-24SS-001'; handleScan('PA-24SS-001'); }
+        function goToCharSetup() { switchScene('scene_stats', 'scene_char'); }
+        
+        function updateVisuals(key) {
+            const img = document.getElementById('charImg');
+            img.src = personas[key];
+            img.classList.remove('opacity-50');
+            img.classList.add('opacity-100');
+            document.getElementById('charPlaceholder').style.display = 'none';
+        }
+        
+        function confirmChar() {
+            const p = document.querySelector('input[name="persona"]:checked');
+            const r = document.querySelector('input[name="rgb"]:checked');
+            if(!p || !r) { alert('請點選 [風格] 與 [場景]'); return; }
+            switchScene('scene_char', 'scene_verdict');
+        }
+
+        function goToLog(type) {
+            document.getElementById('scene_verdict').classList.add('hidden-step');
+            if(type === 'FAIL') {
+                document.getElementById('scene_log_fail').classList.remove('hidden-step');
+            } else {
+                document.getElementById('scene_log_pass').classList.remove('hidden-step');
+            }
+        }
+
+        function backToVerdict() {
+            document.getElementById('scene_log_fail').classList.add('hidden-step');
+            document.getElementById('scene_log_pass').classList.add('hidden-step');
+            document.getElementById('scene_verdict').classList.remove('hidden-step');
+        }
+
+        function submitLog(type) {
+            const container = type === 'FAIL' ? 'failCats' : 'passCats';
+            const checks = document.querySelectorAll(`#${container} input:checked`);
+            if(checks.length === 0) { alert('請至少勾選一個原因'); return; }
+
+            // 1. 蒐集資料
+            const sku = document.getElementById('inputSKU').value.toUpperCase() || 'PA-24SS-001';
+            const persona = document.querySelector('input[name="persona"]:checked')?.value || 'Unknown';
+            const scene = document.querySelector('input[name="rgb"]:checked')?.value || 'Unknown';
+            const height = document.getElementById('hValDispGrid').innerText;
+            const weight = document.getElementById('wValDispGrid').innerText;
+            const reasons = Array.from(checks).map(c => c.nextElementSibling.innerText).join(', ');
+            const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
+            const productInfo = `RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
+
+            // 2. 顯示上傳中
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            document.getElementById('loadingText').innerText = "資料上傳中...";
+
+            // 3. 準備 Payload
+            const payload = {
+                sku: sku,
+                result: type,
+                persona: persona,
+                scene: scene,
+                height: height,
+                weight: weight,
+                reasons: reasons,
+                note: note,
+                productInfo: productInfo
+            };
+
+            // 4. 發送至 Google Apps Script (如果有點設定 URL)
+            if (GOOGLE_SCRIPT_URL) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // 關鍵：避免 CORS 錯誤，雖然拿不到回傳值，但能成功送出
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                }).then(() => {
+                    // 成功後執行 UI 更新
+                    showSuccessUI(type);
+                }).catch(err => {
+                    alert("上傳失敗，請檢查網路或是 URL");
+                    console.error(err);
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                });
+            } else {
+                // 如果沒有設定 URL，直接模擬成功 (測試用)
+                console.log("模擬發送資料:", payload);
+                setTimeout(() => showSuccessUI(type), 1000);
+            }
+        }
+
+        function showSuccessUI(type) {
+            const icon = document.getElementById('finalIcon');
+            const msg = document.getElementById('finalMsg');
+            const title = document.getElementById('finalTitle');
+
+            if(type === 'FAIL') {
+                icon.className = "w-32 h-32 rounded-full border-8 border-rose-m text-rose-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
+                icon.innerHTML = '<i class="fas fa-times"></i>';
+                msg.innerText = QUOTES.FAIL[Math.floor(Math.random() * QUOTES.FAIL.length)];
+                msg.className = "text-3xl font-bold text-rose-m leading-relaxed";
+                title.innerText = "已紀錄 FAIL";
+            } else {
+                icon.className = "w-32 h-32 rounded-full border-8 border-jade-m text-jade-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
+                icon.innerHTML = '<i class="fas fa-check"></i>';
+                msg.innerText = QUOTES.PASS[Math.floor(Math.random() * QUOTES.PASS.length)];
+                msg.className = "text-3xl font-bold text-jade-m leading-relaxed";
+                title.innerText = "已紀錄 PASS";
+            }
+
+            document.getElementById('scene_log_fail').classList.add('hidden-step');
+            document.getElementById('scene_log_pass').classList.add('hidden-step');
+            document.getElementById('scene_success').classList.remove('hidden-step');
+            document.getElementById('loadingOverlay').classList.add('hidden'); // 隱藏 Loading
+            
+            setTimeout(() => icon.classList.remove('scale-0'), 100);
+        }
+
+        function switchScene(from, to) { 
+            document.getElementById(from).classList.add('hidden-step'); 
+            document.getElementById(to).classList.remove('hidden-step'); 
+            window.scrollTo(0,0);
+        }
+        
+        function resetApp() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            document.getElementById('loadingText').innerText = "讀取中...";
+            setTimeout(() => {
+                const scenes = ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'];
+                scenes.forEach(id => document.getElementById(id).classList.add('hidden-step'));
+                document.getElementById('inputSKU').value = '';
+                document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
+                document.getElementById('failNote').value = '';
+                
+                const img = document.getElementById('charImg');
+                img.src = '';
+                img.classList.remove('opacity-100');
+                img.classList.add('opacity-50');
+                document.getElementById('charPlaceholder').style.display = 'block';
+
+                document.getElementById('scene_scan').classList.remove('hidden-step');
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }, 500);
+        }
+
+        function startDictation(targetId) {
+            if (window.hasOwnProperty('webkitSpeechRecognition')) {
+                var recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = "zh-TW";
+                recognition.start();
+                recognition.onresult = function(e) { document.getElementById(targetId).value += e.results[0][0].transcript; recognition.stop(); };
+            } else { alert("瀏覽器不支援，請手動輸入"); }
+        }
+    </script>
+</body>
+</html>
