@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v3.3 | 條碼邏輯修正版</title>
+    <title>By PÓSE IFL v3.6 | 便利掃描版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- 指定穩定版本的掃碼庫 -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
     <script>
         // ==========================================
-        // ★★★ 請填入您的 Google Apps Script 網址 ★★★
+        // ★★★ 已填入您的 Google Apps Script 網址 ★★★
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBi0qaM-8ZB-6YoV7tLnXiskkqPUcLZSXWVDZjxzl2xnNBEGUrHIGrcBjS1B3jFzDM/exec'; 
         // ==========================================
 
@@ -44,7 +45,29 @@
     </script>
     
     <style>
-        body { -webkit-tap-highlight-color: transparent; touch-action: manipulation; background-color: #1C1C1E; color: #FFFFFF; font-size: 18px; overflow-x: hidden; overflow-y: auto; }
+        /* 背景全黑，強調中間的手機畫面 */
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: manipulation; 
+            background-color: #000000; 
+            color: #FFFFFF; 
+            font-size: 18px; 
+            overflow-x: hidden; 
+            overflow-y: auto; 
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* 限制最大寬度，模擬手機邊框 */
+        #app-container {
+            width: 100%;
+            max-width: 450px; /* 強制最大寬度 */
+            min-height: 100vh;
+            background-color: #1C1C1E; /* App 本體的背景色 */
+            position: relative;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+
         .btn-touch:active { transform: scale(0.96); }
         .hidden-step { display: none !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
@@ -68,12 +91,12 @@
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans select-none bg-cocoa-dark">
+<body>
 
-    <main class="flex-1 relative w-full max-w-md mx-auto">
+    <main id="app-container" class="flex flex-col">
 
         <!-- LOGIN OVERLAY -->
-        <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6">
+        <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6 absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <h2 class="text-3xl font-black text-gold-m mb-6">人員識別</h2>
             <p class="text-cream-dim mb-4 text-center">請輸入您的 櫃點/姓名<br>(只需輸入一次)</p>
             <input type="text" id="loginName" class="w-full flat-input text-3xl py-2 mb-8" placeholder="例如: A11-Annie">
@@ -81,50 +104,75 @@
         </div>
 
         <!-- CAMERA SCANNER OVERLAY -->
-        <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col">
+        <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
                 <span class="text-white font-bold">掃描條碼</span>
-                <button onclick="stopScanner()" class="text-white text-2xl"><i class="fas fa-times"></i></button>
+                <button onclick="stopScanner()" class="text-white text-2xl px-4 py-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
             <div id="reader" class="w-full h-full bg-black"></div>
             <div class="absolute bottom-10 w-full text-center text-white/70 text-sm">請將條碼置於框線內</div>
         </div>
 
         <!-- LOADING -->
-        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden">
+        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <div class="w-16 h-16 border-8 border-white/20 border-t-gold-m rounded-full animate-spin mb-6"></div>
             <p id="loadingText" class="text-2xl font-bold text-gold-m">讀取中...</p>
         </div>
 
-        <!-- === SCENE 1: SCAN === -->
-        <div id="scene_scan" class="step-container h-screen flex flex-col justify-center px-6">
-            <div class="absolute top-4 left-4 text-xs text-cream-dim">
+        <!-- === SCENE 1: SCAN (大幅度修改版面) === -->
+        <div id="scene_scan" class="step-container h-screen flex flex-col px-6 bg-cocoa-dark relative">
+            
+            <!-- 頂部 User 資訊 -->
+            <div class="absolute top-4 left-4 text-xs text-cream-dim z-10">
                 User: <span id="currentUserDisplay" class="text-gold-m font-bold">...</span>
                 <button onclick="logout()" class="ml-2 text-white/30 underline">更換</button>
             </div>
-            <div class="w-full text-center space-y-8">
-                <div>
-                    <h1 class="text-4xl font-black text-cream mb-2">裝備識別</h1>
-                    <p class="text-lg text-cream-dim">輸入貨號 或 點擊相機掃描</p>
+
+            <!-- 主標題 -->
+            <div class="mt-20 mb-8 text-center shrink-0">
+                <h1 class="text-4xl font-black text-cream mb-2">裝備識別</h1>
+                <p class="text-lg text-cream-dim">PÓSE IFL System</p>
+            </div>
+
+            <!-- 中間：巨大的掃描按鈕 (主角) -->
+            <div class="flex-1 flex flex-col items-center justify-center -mt-10">
+                <button onclick="startScanner()" class="w-64 h-64 bg-cocoa-card border-4 border-gold-m/50 rounded-3xl flex flex-col items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.15)] active:scale-95 transition-all group hover:border-gold-m">
+                    
+                    <!-- 相機圖示 -->
+                    <div class="w-24 h-24 mb-4 text-cream group-hover:text-gold-m transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                        </svg>
+                    </div>
+                    
+                    <span class="text-2xl font-black text-white tracking-widest group-hover:text-gold-m">點我掃描</span>
+                    <span class="text-xs text-white/50 mt-1 uppercase tracking-wider">TAP TO SCAN</span>
+                </button>
+            </div>
+
+            <!-- 底部：手動輸入區 (配角) -->
+            <div class="mb-10 w-full shrink-0">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="h-px bg-white/10 flex-1"></div>
+                    <span class="text-xs text-white/30 uppercase tracking-widest">or 手動輸入</span>
+                    <div class="h-px bg-white/10 flex-1"></div>
                 </div>
                 
-                <!-- 搜尋與相機按鈕 -->
-                <div class="w-full flex gap-2">
-                    <input type="text" id="inputSKU" placeholder="例如 2520201" 
-                           class="flex-1 flat-input text-4xl py-4 uppercase placeholder:text-2xl"
+                <div class="flex gap-2 h-14">
+                    <input type="text" id="inputSKU" placeholder="輸入貨號 (例: 2520201)" 
+                           class="flex-1 flat-input text-2xl py-2 uppercase placeholder:text-lg border-b-2 border-white/20 focus:border-gold-m"
                            onkeyup="if(event.key==='Enter') handleScan(this.value)">
-                    
-                    <!-- 掃描按鈕 -->
-                    <button onclick="startScanner()" class="w-16 bg-cocoa-card border border-white/20 text-white rounded-xl font-black text-xl shadow-soft active:bg-white/10 transition-colors">
-                        <i class="fas fa-camera"></i>
-                    </button>
-
-                    <!-- GO 按鈕 -->
-                    <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-20 bg-gold-m text-cocoa-dark rounded-xl font-black text-xl shadow-soft active:scale-95 transition-transform">
-                        GO
+                    <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-20 bg-white/10 text-white rounded-lg font-bold text-lg active:bg-white/20">
+                        送出
                     </button>
                 </div>
             </div>
+
         </div>
 
         <!-- === SCENE 2: EQUIPMENT CARD === -->
@@ -133,7 +181,9 @@
                 <h1 class="text-4xl font-black text-white tracking-tighter leading-none" id="statsSKU">...</h1>
                 <span class="inline-block bg-gold-m text-cocoa-dark text-xs font-black px-1.5 py-0.5 rounded">SSR</span>
                 <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors absolute right-4">
-                    <i class="fas fa-redo-alt"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
                 </button>
             </div>
 
@@ -176,7 +226,12 @@
             </div>
 
             <div class="sticky-footer flex gap-3">
-                <button onclick="goToCharSetup()" class="w-full py-5 bg-gold-m text-cocoa-dark text-2xl font-black rounded-xl shadow-soft btn-touch flex items-center justify-center gap-3"><i class="fas fa-tshirt"></i> <span>為客著裝</span></button>
+                <button onclick="goToCharSetup()" class="w-full py-5 bg-gold-m text-cocoa-dark text-2xl font-black rounded-xl shadow-soft btn-touch flex items-center justify-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                    <span>為客著裝</span>
+                </button>
             </div>
         </div>
 
@@ -187,7 +242,7 @@
                 <div class="flex items-center gap-3">
                     <span class="text-3xl font-black text-gold-m" id="charSKU">...</span>
                     <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors">
-                        <i class="fas fa-redo-alt"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                     </button>
                 </div>
             </div>
@@ -345,6 +400,12 @@
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('scannerOverlay').classList.add('flex');
             
+            if (typeof Html5Qrcode === 'undefined') {
+                alert("相機模組尚未加載，請檢查網路連線");
+                stopScanner();
+                return;
+            }
+
             html5QrcodeScanner = new Html5Qrcode("reader");
             
             const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
@@ -355,7 +416,8 @@
                 onScanSuccess, 
                 onScanFailure
             ).catch(err => {
-                alert("無法啟動相機，請確認您已允許權限，且使用 https 連線。");
+                console.error("Camera Error:", err);
+                alert("無法啟動相機。原因：" + err);
                 stopScanner();
             });
         }
@@ -366,7 +428,11 @@
                     html5QrcodeScanner.clear();
                     document.getElementById('scannerOverlay').classList.add('hidden');
                     document.getElementById('scannerOverlay').classList.remove('flex');
-                }).catch(err => console.log("Failed to stop scanner"));
+                }).catch(err => {
+                    console.log("Failed to stop scanner");
+                    document.getElementById('scannerOverlay').classList.add('hidden');
+                    document.getElementById('scannerOverlay').classList.remove('flex');
+                });
             } else {
                 document.getElementById('scannerOverlay').classList.add('hidden');
                 document.getElementById('scannerOverlay').classList.remove('flex');
@@ -376,7 +442,8 @@
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`Scan result: ${decodedText}`, decodedResult);
             stopScanner(); 
-            // 掃描後，將數值填入並處理
+            // 填入原始掃描數值供參考，但實際處理會經過切割
+            document.getElementById('inputSKU').value = decodedText; 
             handleScan(decodedText);
         }
 
@@ -449,8 +516,10 @@
             if(!val) return;
             val = val.toUpperCase().trim();
 
-            // ★★★ 條碼邏輯核心 ★★★
-            // 如果長度超過7碼 (例如 252020188F 是10碼)，則只取前7碼
+            // 1. 去除橫線
+            val = val.replace(/-/g, '');
+
+            // 2. 條碼邏輯: 如果長度超過7碼，只取前7碼 (252020188F -> 2520201)
             let sku = val;
             if (val.length > 7) {
                 sku = val.substring(0, 7);
@@ -460,16 +529,11 @@
             document.getElementById('loadingOverlay').classList.add('flex');
             document.getElementById('loadingText').innerText = "讀取中...";
             
-            // 使用處理過的 SKU 來抓圖片
             const imgSrc = `./images/${sku}.jpg`;
-            
-            // 嘗試取得商品資料 (如果未來有JSON，就用 sku 去查，目前先用預設)
             const data = productDB[sku] || productDB['DEFAULT'];
 
             setTimeout(() => {
                 document.getElementById('statsImg').src = imgSrc; 
-                
-                // 顯示的貨號也只顯示 7 碼 (比較乾淨)，或是您可以改回 val 顯示完整條碼
                 document.getElementById('statsSKU').innerText = sku; 
                 document.getElementById('charSKU').innerText = sku;
                 
@@ -488,10 +552,6 @@
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 switchScene('scene_scan', 'scene_stats');
             }, 500);
-        }
-        
-        function simulateScan() { 
-            // 已經不需要，但留著函數殼以防萬一
         }
         
         function goToCharSetup() { switchScene('scene_stats', 'scene_char'); }
@@ -584,13 +644,13 @@
 
             if(type === 'FAIL') {
                 icon.className = "w-32 h-32 rounded-full border-8 border-rose-m text-rose-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
-                icon.innerHTML = '<i class="fas fa-times"></i>';
+                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>';
                 msg.innerText = QUOTES.FAIL[Math.floor(Math.random() * QUOTES.FAIL.length)];
                 msg.className = "text-3xl font-bold text-rose-m leading-relaxed";
                 title.innerText = "已紀錄 FAIL";
             } else {
                 icon.className = "w-32 h-32 rounded-full border-8 border-jade-m text-jade-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
-                icon.innerHTML = '<i class="fas fa-check"></i>';
+                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
                 msg.innerText = QUOTES.PASS[Math.floor(Math.random() * QUOTES.PASS.length)];
                 msg.className = "text-3xl font-bold text-jade-m leading-relaxed";
                 title.innerText = "已紀錄 PASS";
