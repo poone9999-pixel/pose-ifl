@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v3.6 | 便利掃描版</title>
+    <title>By PÓSE IFL v3.8 | 滑桿與文字修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 指定穩定版本的掃碼庫 -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -71,11 +71,26 @@
         .btn-touch:active { transform: scale(0.96); }
         .hidden-step { display: none !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; background: #FFFFFF; border: 4px solid #60A5FA; box-shadow: 0 2px 6px rgba(0,0,0,0.8); border-radius: 50%; height: 32px; width: 32px; margin-top: -12px; }
-        input[type=range][orient=vertical]::-webkit-slider-thumb { margin-top: 0; margin-left: -12px; }
+        
+        /* 滑桿圓鈕樣式調整 */
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            background: #FFFFFF; 
+            border: 4px solid #60A5FA; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.8); 
+            border-radius: 50%; 
+            height: 32px; width: 32px; 
+            margin-top: -12px; /* 垂直居中修正 */
+        }
+        input[type=range][orient=vertical]::-webkit-slider-thumb { 
+            margin-top: 0; 
+            margin-left: -12px; /* 水平居中修正 */
+        }
+        
         .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
         input[type=range][orient=vertical] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 100%; height: 100%; }
         input[type=range][orient=vertical]::-webkit-slider-runnable-track { width: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
+        
         .btn-persona { background: #423F30; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
         .chk-persona:checked + .btn-persona { background-color: #FFD700; color: #1C1C1E; border-color: #FFD700; font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
         .btn-scene { background: #2C3E50; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
@@ -114,7 +129,11 @@
                 </button>
             </div>
             <div id="reader" class="w-full h-full bg-black"></div>
-            <div class="absolute bottom-10 w-full text-center text-white/70 text-sm">請將條碼置於框線內</div>
+            <!-- 掃描提示框調整為長條形 -->
+            <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4">
+                <p>請將 <span class="text-gold-m font-bold">完整條碼</span> 放入框線內</p>
+                <p class="text-xs text-white/50 mt-1">支援一般商品條碼 (Code 128)</p>
+            </div>
         </div>
 
         <!-- LOADING -->
@@ -123,7 +142,7 @@
             <p id="loadingText" class="text-2xl font-bold text-gold-m">讀取中...</p>
         </div>
 
-        <!-- === SCENE 1: SCAN (大幅度修改版面) === -->
+        <!-- === SCENE 1: SCAN === -->
         <div id="scene_scan" class="step-container h-screen flex flex-col px-6 bg-cocoa-dark relative">
             
             <!-- 頂部 User 資訊 -->
@@ -132,17 +151,16 @@
                 <button onclick="logout()" class="ml-2 text-white/30 underline">更換</button>
             </div>
 
-            <!-- 主標題 -->
-            <div class="mt-20 mb-8 text-center shrink-0">
-                <h1 class="text-4xl font-black text-cream mb-2">裝備識別</h1>
-                <p class="text-lg text-cream-dim">PÓSE IFL System</p>
+            <!-- 1. 標題 -->
+            <div class="mt-16 mb-6 text-center shrink-0">
+                <h1 class="text-4xl font-black text-cream mb-2">貨號輸入</h1>
+                <p class="text-sm text-cream-dim uppercase tracking-widest">請掃描商品條碼</p>
             </div>
 
-            <!-- 中間：巨大的掃描按鈕 (主角) -->
-            <div class="flex-1 flex flex-col items-center justify-center -mt-10">
-                <button onclick="startScanner()" class="w-64 h-64 bg-cocoa-card border-4 border-gold-m/50 rounded-3xl flex flex-col items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.15)] active:scale-95 transition-all group hover:border-gold-m">
+            <!-- 2. 中間：大相機按鈕 (主角) -->
+            <div class="flex-1 flex flex-col items-center justify-center mb-4">
+                <button onclick="startScanner()" class="w-64 h-64 bg-cocoa-card border-4 border-gold-m/50 rounded-full flex flex-col items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.15)] active:scale-95 transition-all group hover:border-gold-m animate-pulse">
                     
-                    <!-- 相機圖示 -->
                     <div class="w-24 h-24 mb-4 text-cream group-hover:text-gold-m transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
@@ -151,26 +169,26 @@
                     </div>
                     
                     <span class="text-2xl font-black text-white tracking-widest group-hover:text-gold-m">點我掃描</span>
-                    <span class="text-xs text-white/50 mt-1 uppercase tracking-wider">TAP TO SCAN</span>
                 </button>
             </div>
 
-            <!-- 底部：手動輸入區 (配角) -->
-            <div class="mb-10 w-full shrink-0">
-                <div class="flex items-center gap-4 mb-2">
+            <!-- 3. 底部：手動輸入區 (垂直排列) -->
+            <div class="mb-12 w-full shrink-0 flex flex-col gap-3">
+                <div class="flex items-center gap-4 mb-1">
                     <div class="h-px bg-white/10 flex-1"></div>
-                    <span class="text-xs text-white/30 uppercase tracking-widest">or 手動輸入</span>
+                    <span class="text-xs text-white/30 uppercase tracking-widest">或 手動輸入</span>
                     <div class="h-px bg-white/10 flex-1"></div>
                 </div>
                 
-                <div class="flex gap-2 h-14">
-                    <input type="text" id="inputSKU" placeholder="輸入貨號 (例: 2520201)" 
-                           class="flex-1 flat-input text-2xl py-2 uppercase placeholder:text-lg border-b-2 border-white/20 focus:border-gold-m"
-                           onkeyup="if(event.key==='Enter') handleScan(this.value)">
-                    <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-20 bg-white/10 text-white rounded-lg font-bold text-lg active:bg-white/20">
-                        送出
-                    </button>
-                </div>
+                <!-- 輸入框 (滿版) -->
+                <input type="text" id="inputSKU" placeholder="例如: 2520201" 
+                       class="w-full flat-input text-3xl py-3 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white"
+                       onkeyup="if(event.key==='Enter') handleScan(this.value)">
+                
+                <!-- 送出按鈕 (滿版，在下方) -->
+                <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors">
+                    確認送出 (GO)
+                </button>
             </div>
 
         </div>
@@ -215,8 +233,9 @@
                      onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
-                    <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[80%]">
-                        <p class="text-2xl font-black text-white text-outline leading-tight drop-shadow-lg" id="statsBrief">...</p>
+                    <!-- 調整過的文字框：自適應高度、自動換行、放寬寬度限制 -->
+                    <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
+                        <p class="text-xl font-black text-white text-outline leading-normal drop-shadow-lg break-words" id="statsBrief">...</p>
                     </div>
                     <div>
                          <span class="text-xs text-cream-dim font-bold block text-right text-shadow-sm">SWITCH</span>
@@ -268,10 +287,13 @@
                     <div class="col-span-3 aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft">
                         <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
-                        <div class="absolute bottom-0 left-0 right-10 h-16 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-2 z-10">
+                        
+                        <!-- 修正過的體重滑桿容器：加高至 h-20，增加 padding-bottom 至 pb-5 -->
+                        <div class="absolute bottom-0 left-0 right-10 h-20 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-5 z-10">
                             <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
                             <input type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="document.getElementById('wValDispGrid').innerText=this.value">
                         </div>
+                        
                         <div class="absolute top-0 bottom-0 right-0 w-14 bg-gradient-to-l from-black/90 to-transparent flex flex-col items-center justify-between py-4 z-10">
                             <span class="text-[10px] text-white/70 font-bold">180</span>
                             <div class="h-full py-2"><input type="range" orient="vertical" min="150" max="180" value="160" oninput="document.getElementById('hValDispGrid').innerText=this.value"></div>
@@ -408,7 +430,19 @@
 
             html5QrcodeScanner = new Html5Qrcode("reader");
             
-            const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
+            // ★★★ 針對長條形條碼優化設定 ★★★
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 280, height: 80 }, // 扁長形掃描框
+                aspectRatio: 1.0,
+                // 明確指定支援一般商品條碼格式
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.UPC_A
+                ] 
+            };
             
             html5QrcodeScanner.start(
                 { facingMode: "environment" }, 
@@ -417,7 +451,7 @@
                 onScanFailure
             ).catch(err => {
                 console.error("Camera Error:", err);
-                alert("無法啟動相機。原因：" + err);
+                alert("無法啟動相機。請確認允許權限。錯誤：" + err);
                 stopScanner();
             });
         }
@@ -442,7 +476,6 @@
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`Scan result: ${decodedText}`, decodedResult);
             stopScanner(); 
-            // 填入原始掃描數值供參考，但實際處理會經過切割
             document.getElementById('inputSKU').value = decodedText; 
             handleScan(decodedText);
         }
