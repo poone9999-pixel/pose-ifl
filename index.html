@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v3.1</title>
+    <title>By PÓSE IFL v3.3 | 條碼邏輯修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -15,7 +16,6 @@
         // ==========================================
 
         // ★★★ 請填入您的 GitHub 帳號名稱 (用於產生圖片連結) ★★★
-        // 例如: const GITHUB_USER = 'poone9999-pixel';
         const GITHUB_USER = 'poone9999-pixel';
         const REPO_NAME = 'pose-ifl';
 
@@ -80,6 +80,16 @@
             <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl">確認進入</button>
         </div>
 
+        <!-- CAMERA SCANNER OVERLAY -->
+        <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col">
+            <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
+                <span class="text-white font-bold">掃描條碼</span>
+                <button onclick="stopScanner()" class="text-white text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="reader" class="w-full h-full bg-black"></div>
+            <div class="absolute bottom-10 w-full text-center text-white/70 text-sm">請將條碼置於框線內</div>
+        </div>
+
         <!-- LOADING -->
         <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden">
             <div class="w-16 h-16 border-8 border-white/20 border-t-gold-m rounded-full animate-spin mb-6"></div>
@@ -95,23 +105,25 @@
             <div class="w-full text-center space-y-8">
                 <div>
                     <h1 class="text-4xl font-black text-cream mb-2">裝備識別</h1>
-                    <p class="text-lg text-cream-dim">請輸入貨號 (請對照圖片檔名)</p>
+                    <p class="text-lg text-cream-dim">輸入貨號 或 點擊相機掃描</p>
                 </div>
                 
-                <!-- 新增：搜尋按鈕區域 -->
+                <!-- 搜尋與相機按鈕 -->
                 <div class="w-full flex gap-2">
                     <input type="text" id="inputSKU" placeholder="例如 2520201" 
                            class="flex-1 flat-input text-4xl py-4 uppercase placeholder:text-2xl"
                            onkeyup="if(event.key==='Enter') handleScan(this.value)">
+                    
+                    <!-- 掃描按鈕 -->
+                    <button onclick="startScanner()" class="w-16 bg-cocoa-card border border-white/20 text-white rounded-xl font-black text-xl shadow-soft active:bg-white/10 transition-colors">
+                        <i class="fas fa-camera"></i>
+                    </button>
+
+                    <!-- GO 按鈕 -->
                     <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-20 bg-gold-m text-cocoa-dark rounded-xl font-black text-xl shadow-soft active:scale-95 transition-transform">
                         GO
                     </button>
                 </div>
-
-                <!-- 縮小並淡化 DEMO 按鈕 -->
-                <button onclick="simulateScan()" class="py-3 px-6 bg-transparent border border-white/10 rounded-full text-white/30 font-medium text-sm tracking-widest hover:text-white hover:border-white/50 transition-colors">
-                    載入測試範例 (Demo)
-                </button>
             </div>
         </div>
 
@@ -150,7 +162,7 @@
 
             <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
                 <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" 
-                     onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found'; alert('圖片讀取失敗，請確認 GitHub 檔名是否為小寫 .jpg');">
+                     onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[80%]">
@@ -326,8 +338,51 @@
             }
         }
 
+        // --- SCANNER LOGIC ---
+        let html5QrcodeScanner = null;
+
+        function startScanner() {
+            document.getElementById('scannerOverlay').classList.remove('hidden');
+            document.getElementById('scannerOverlay').classList.add('flex');
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
+            
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess, 
+                onScanFailure
+            ).catch(err => {
+                alert("無法啟動相機，請確認您已允許權限，且使用 https 連線。");
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    document.getElementById('scannerOverlay').classList.add('hidden');
+                    document.getElementById('scannerOverlay').classList.remove('flex');
+                }).catch(err => console.log("Failed to stop scanner"));
+            } else {
+                document.getElementById('scannerOverlay').classList.add('hidden');
+                document.getElementById('scannerOverlay').classList.remove('flex');
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Scan result: ${decodedText}`, decodedResult);
+            stopScanner(); 
+            // 掃描後，將數值填入並處理
+            handleScan(decodedText);
+        }
+
+        function onScanFailure(error) {}
+
         // --- DATA ---
-        // ★★★ 修正圖片路徑，直接用 ./images/ ★★★
         const personas = {
             'Leader': './images/leader.jpg', 
             'Self':   './images/self.jpg',
@@ -359,7 +414,7 @@
 
         // --- INIT ---
         window.onload = function() {
-            checkUser(); // 檢查登入
+            checkUser(); 
             renderList('failCats', FAIL_DB, 'fail');
             renderList('passCats', PASS_DB, 'pass');
             document.getElementById("inputSKU").addEventListener("keyup", function(event) {
@@ -393,20 +448,30 @@
         function handleScan(val) {
             if(!val) return;
             val = val.toUpperCase().trim();
+
+            // ★★★ 條碼邏輯核心 ★★★
+            // 如果長度超過7碼 (例如 252020188F 是10碼)，則只取前7碼
+            let sku = val;
+            if (val.length > 7) {
+                sku = val.substring(0, 7);
+            }
+            
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('loadingOverlay').classList.add('flex');
             document.getElementById('loadingText').innerText = "讀取中...";
             
-            // ★ 強制使用輸入的 SKU 來抓圖片 (不管有沒有資料)
-            const imgSrc = `./images/${val}.jpg`;
+            // 使用處理過的 SKU 來抓圖片
+            const imgSrc = `./images/${sku}.jpg`;
             
-            // 如果有對應資料就抓，沒有就抓預設，但 SKU 文字和圖片維持輸入值
-            const data = productDB[val] || productDB['DEFAULT'];
+            // 嘗試取得商品資料 (如果未來有JSON，就用 sku 去查，目前先用預設)
+            const data = productDB[sku] || productDB['DEFAULT'];
 
             setTimeout(() => {
                 document.getElementById('statsImg').src = imgSrc; 
-                document.getElementById('statsSKU').innerText = val;
-                document.getElementById('charSKU').innerText = val;
+                
+                // 顯示的貨號也只顯示 7 碼 (比較乾淨)，或是您可以改回 val 顯示完整條碼
+                document.getElementById('statsSKU').innerText = sku; 
+                document.getElementById('charSKU').innerText = sku;
                 
                 document.getElementById('statsBrief').innerText = `"${data.brief}"`;
                 document.getElementById('statsRGB').innerText = data.rgb;
@@ -426,9 +491,7 @@
         }
         
         function simulateScan() { 
-            const i = document.getElementById('inputSKU'); 
-            i.value='PA-24SS-001'; 
-            handleScan('PA-24SS-001'); 
+            // 已經不需要，但留著函數殼以防萬一
         }
         
         function goToCharSetup() { switchScene('scene_stats', 'scene_char'); }
@@ -468,7 +531,7 @@
             const checks = document.querySelectorAll(`#${container} input:checked`);
             if(checks.length === 0) { alert('請至少勾選一個原因'); return; }
 
-            const sku = document.getElementById('statsSKU').innerText; // ★改為抓取顯示的SKU，確保正確
+            const sku = document.getElementById('statsSKU').innerText; 
             const persona = document.querySelector('input[name="persona"]:checked')?.value || 'Unknown';
             const scene = document.querySelector('input[name="rgb"]:checked')?.value || 'Unknown';
             const height = document.getElementById('hValDispGrid').innerText;
@@ -477,7 +540,6 @@
             const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
             const productInfo = `RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
             
-            // ★ 自動產生圖片連結
             const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.jpg`;
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -495,7 +557,7 @@
                 reasons: reasons,
                 note: note,
                 productInfo: productInfo,
-                imgLink: imgLink // ★傳送連結
+                imgLink: imgLink 
             };
 
             if (GOOGLE_SCRIPT_URL) {
@@ -507,7 +569,7 @@
                 }).then(() => {
                     showSuccessUI(type);
                 }).catch(err => {
-                    alert("上傳失敗，請檢查網路");
+                    alert("上傳失敗，請檢查網路或是 URL");
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 });
             } else {
