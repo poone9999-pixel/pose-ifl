@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v3.8 | 滑桿與文字修正版</title>
+    <title>By PÓSE IFL v3.9 | 條碼專攻版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 指定穩定版本的掃碼庫 -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -45,7 +45,7 @@
     </script>
     
     <style>
-        /* 背景全黑，強調中間的手機畫面 */
+        /* 背景全黑 */
         body { 
             -webkit-tap-highlight-color: transparent; 
             touch-action: manipulation; 
@@ -58,12 +58,12 @@
             justify-content: center;
         }
         
-        /* 限制最大寬度，模擬手機邊框 */
+        /* 限制最大寬度 */
         #app-container {
             width: 100%;
-            max-width: 450px; /* 強制最大寬度 */
+            max-width: 450px; 
             min-height: 100vh;
-            background-color: #1C1C1E; /* App 本體的背景色 */
+            background-color: #1C1C1E; 
             position: relative;
             box-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
@@ -72,7 +72,7 @@
         .hidden-step { display: none !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
         
-        /* 滑桿圓鈕樣式調整 */
+        /* 滑桿圓鈕修正：避免被切掉 */
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
             background: #FFFFFF; 
@@ -80,11 +80,11 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.8); 
             border-radius: 50%; 
             height: 32px; width: 32px; 
-            margin-top: -12px; /* 垂直居中修正 */
+            margin-top: -12px; 
         }
         input[type=range][orient=vertical]::-webkit-slider-thumb { 
             margin-top: 0; 
-            margin-left: -12px; /* 水平居中修正 */
+            margin-left: -12px; 
         }
         
         .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
@@ -129,10 +129,10 @@
                 </button>
             </div>
             <div id="reader" class="w-full h-full bg-black"></div>
-            <!-- 掃描提示框調整為長條形 -->
+            <!-- 掃描提示框調整為扁長條形，引導掃描一維條碼 -->
             <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4">
-                <p>請將 <span class="text-gold-m font-bold">完整條碼</span> 放入框線內</p>
-                <p class="text-xs text-white/50 mt-1">支援一般商品條碼 (Code 128)</p>
+                <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準</p>
+                <p class="text-xs text-white/50">支援格式: Code 128 / Code 39 / EAN</p>
             </div>
         </div>
 
@@ -180,12 +180,10 @@
                     <div class="h-px bg-white/10 flex-1"></div>
                 </div>
                 
-                <!-- 輸入框 (滿版) -->
                 <input type="text" id="inputSKU" placeholder="例如: 2520201" 
                        class="w-full flat-input text-3xl py-3 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white"
                        onkeyup="if(event.key==='Enter') handleScan(this.value)">
                 
-                <!-- 送出按鈕 (滿版，在下方) -->
                 <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors">
                     確認送出 (GO)
                 </button>
@@ -233,7 +231,6 @@
                      onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
-                    <!-- 調整過的文字框：自適應高度、自動換行、放寬寬度限制 -->
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
                         <p class="text-xl font-black text-white text-outline leading-normal drop-shadow-lg break-words" id="statsBrief">...</p>
                     </div>
@@ -288,7 +285,7 @@
                         <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
                         
-                        <!-- 修正過的體重滑桿容器：加高至 h-20，增加 padding-bottom 至 pb-5 -->
+                        <!-- 修正過的體重滑桿 -->
                         <div class="absolute bottom-0 left-0 right-10 h-20 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-5 z-10">
                             <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
                             <input type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="document.getElementById('wValDispGrid').innerText=this.value">
@@ -430,12 +427,13 @@
 
             html5QrcodeScanner = new Html5Qrcode("reader");
             
-            // ★★★ 針對長條形條碼優化設定 ★★★
+            // ★★★ 條碼掃描優化 ★★★
+            // 1. qrbox 設為扁長型 (300x100) 以適應條碼
+            // 2. formatsToSupport 僅支援 1D 條碼，排除 QR Code，加快速度
             const config = { 
-                fps: 10, 
-                qrbox: { width: 280, height: 80 }, // 扁長形掃描框
+                fps: 20, // 提高掃描幀率
+                qrbox: { width: 300, height: 100 }, 
                 aspectRatio: 1.0,
-                // 明確指定支援一般商品條碼格式
                 formatsToSupport: [ 
                     Html5QrcodeSupportedFormats.CODE_128,
                     Html5QrcodeSupportedFormats.CODE_39,
@@ -497,10 +495,11 @@
             }
         };
 
+        // ★★★ 更新後的數據庫 ★★★
         const FAIL_DB = {
             '六大焦慮': ['怕不專業、不會搭', '束縛感、怕太累', '不實穿、怕難顧', '怕沒質感、沒氣場', '怕顯胖、裝嫩/顯老', '捨不得、配不上'],
-            '五大痛點': ['副乳、蝴蝶袖', '虎背熊腰、圓肩厚身', '胃凸、顯小腹', '梨形身材、骨盆寬', '臀部扁平、下垂','蘿蔔O型、顯腿粗'],
-            '外部因素': ['太貴、預算超支'、'CP值不夠', '顯黑','不喜歡圖案','沒適合尺碼', '刺癢','太厚太薄','逛逛無需求' ,'需問老公/朋友/媽媽']
+            '五大痛點': ['副乳、蝴蝶袖', '虎背熊腰、圓肩厚身', '胃凸、顯小腹', '梨形身材、骨盆寬', '臀部扁平、下垂', '蘿蔔O型、顯腿粗'],
+            '外部因素': ['太貴、預算超支', 'CP值不夠', '顯黑', '不喜歡圖案', '沒適合尺碼', '刺癢', '太厚太薄', '逛逛無需求', '需問老公/朋友/媽媽']
         };
         const PASS_DB = {
             '六大態度': ['掌握感', '有支撐', '不後悔', '有界線', '是本我', '很值得'],
@@ -526,10 +525,11 @@
             const container = document.getElementById(targetId);
             const style = type === 'fail' ? 'fail-check' : 'pass-check';
             Object.keys(data).forEach(cat => {
+                // ★★★ 修改這裡：支援多行文字顯示 ★★★
                 const items = data[cat].map((item, i) => `
-                    <div class="relative">
+                    <div class="relative h-full">
                         <input type="checkbox" id="${type}_${cat}_${i}" class="${style} hidden peer">
-                        <label for="${type}_${cat}_${i}" class="block text-center py-4 px-2 bg-cocoa-card border-2 border-white/10 rounded-lg text-lg text-cream-dim font-bold cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none">${item}</label>
+                        <label for="${type}_${cat}_${i}" class="flex items-center justify-center text-center py-3 px-2 bg-cocoa-card border-2 border-white/10 rounded-lg text-base font-bold text-cream-dim cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none min-h-[64px] leading-tight break-words">${item}</label>
                     </div>
                 `).join('');
                 container.innerHTML += `
