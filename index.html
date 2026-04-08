@@ -452,7 +452,8 @@
                     }
                 },
                 decoder: {
-                    readers: ["code_128_reader", "ean_reader", "code_39_reader", "ean_8_reader"]
+                    // ★ 關閉 EAN 模組，只鎖定 Code 128 與 Code 39，徹底消滅亂數幻覺
+                    readers: ["code_128_reader", "code_39_reader"]
                 },
                 locate: true, 
                 locator: { patchSize: "medium", halfSample: true }
@@ -481,12 +482,15 @@
 
         function onScanSuccess(result) {
             const code = result.codeResult.code;
-            if (code && code.length > 5) {
+            // ★ 設定長度門檻 >= 8，實體吊牌如 252-0426-51-F 長度絕對足夠，藉此過濾短雜訊
+            if (code && code.length >= 8) {
                 stopScanner(); 
                 document.getElementById('inputSKU').value = code; 
                 handleScan(code);
             }
         }
+
+        function onScanFailure(error) {}
 
         // --- DATA ---
         const personas = {
