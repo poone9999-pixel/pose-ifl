@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v4.0 | Quagga 掃描版</title>
+    <title>By PÓSE IFL v4.1 | 實戰穩定版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ★★★ 更換核心：改用 Quagga2 (專攻條碼) ★★★ -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
@@ -58,7 +58,6 @@
             justify-content: center;
         }
         
-        /* 限制最大寬度 */
         #app-container {
             width: 100%;
             max-width: 450px; 
@@ -72,7 +71,7 @@
         .hidden-step { display: none !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
         
-        /* 滑桿圓鈕修正 */
+        /* 滑桿圓鈕 */
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
             background: #FFFFFF; 
@@ -112,9 +111,8 @@
             object-fit: cover;
         }
         #reader canvas {
-            display: none; /* 隱藏 Quagga 的 canvas，只顯示 video */
+            display: none; 
         }
-        /* 掃描線動畫 */
         .scan-laser {
             position: absolute;
             top: 30%;
@@ -144,7 +142,7 @@
             <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl">確認進入</button>
         </div>
 
-        <!-- CAMERA SCANNER OVERLAY (Quagga) -->
+        <!-- CAMERA SCANNER OVERLAY -->
         <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
                 <span class="text-white font-bold">掃描條碼</span>
@@ -155,10 +153,8 @@
                 </button>
             </div>
             
-            <!-- 掃描區域 -->
             <div class="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
                 <div id="reader" class="w-full h-full absolute inset-0"></div>
-                <!-- 掃描框視覺 -->
                 <div class="absolute w-[80%] h-[30%] border-2 border-gold-m/70 rounded-lg z-20 pointer-events-none flex flex-col justify-between">
                     <div class="w-full h-1 bg-gold-m/30"></div>
                     <div class="w-full h-1 bg-gold-m/30"></div>
@@ -166,15 +162,14 @@
                 <div class="scan-laser"></div>
             </div>
 
-            <!-- 掃描提示 -->
             <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4 z-30">
                 <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準框線</p>
-                <p class="text-xs text-white/50">已切換至高解析度模式</p>
+                <p class="text-xs text-white/50">支援格式: Code 128 / Code 39 / EAN</p>
             </div>
         </div>
 
         <!-- LOADING -->
-        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden absolute w-full max-w-[450px] mx-auto left-0 right-0">
+        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden absolute w-full max-w-[450px] mx-auto left-0 right-0 z-[80]">
             <div class="w-16 h-16 border-8 border-white/20 border-t-gold-m rounded-full animate-spin mb-6"></div>
             <p id="loadingText" class="text-2xl font-bold text-gold-m">讀取中...</p>
         </div>
@@ -315,12 +310,10 @@
                     <div class="col-span-3 aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft">
                         <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
-                        
                         <div class="absolute bottom-0 left-0 right-10 h-20 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-5 z-10">
                             <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
                             <input type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="document.getElementById('wValDispGrid').innerText=this.value">
                         </div>
-                        
                         <div class="absolute top-0 bottom-0 right-0 w-14 bg-gradient-to-l from-black/90 to-transparent flex flex-col items-center justify-between py-4 z-10">
                             <span class="text-[10px] text-white/70 font-bold">180</span>
                             <div class="h-full py-2"><input type="range" orient="vertical" min="150" max="180" value="160" oninput="document.getElementById('hValDispGrid').innerText=this.value"></div>
@@ -450,28 +443,23 @@
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('scannerOverlay').classList.add('flex');
             
-            // 初始化 Quagga
             Quagga.init({
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: document.querySelector('#reader'), // 指向容器
+                    target: document.querySelector('#reader'), 
                     constraints: {
-                        facingMode: "environment", // 使用後置鏡頭
-                        width: { min: 640, ideal: 1280, max: 1920 }, // 偏好高解析度
+                        facingMode: "environment", 
+                        width: { min: 640, ideal: 1280, max: 1920 }, 
                         height: { min: 480, ideal: 720, max: 1080 },
                         aspectRatio: { min: 1, max: 2 }
                     }
                 },
                 decoder: {
-                    // ★★★ 專攻條碼：Code 128, Code 39, EAN (不含 QR) ★★★
                     readers: ["code_128_reader", "ean_reader", "code_39_reader", "ean_8_reader"]
                 },
-                locate: true, // 開啟定位功能，幫助找到條碼位置
-                locator: {
-                    patchSize: "medium",
-                    halfSample: true
-                }
+                locate: true, 
+                locator: { patchSize: "medium", halfSample: true }
             }, function(err) {
                 if (err) {
                     console.error(err);
@@ -482,29 +470,31 @@
                 console.log("Initialization finished. Ready to start");
                 Quagga.start();
                 isScanning = true;
-            });
-
-            // 監聽掃描結果
-            Quagga.onDetected(function(result) {
-                const code = result.codeResult.code;
-                console.log("Barcode detected and processed : [" + code + "]", result);
                 
-                // 簡單驗證：至少要有 5 碼才算有效
-                if (code && code.length > 5) {
-                    stopScanner();
-                    document.getElementById('inputSKU').value = code;
-                    handleScan(code);
-                }
+                // ★ 綁定掃描事件
+                Quagga.onDetected(onScanSuccess);
             });
         }
 
         function stopScanner() {
             if (isScanning) {
                 Quagga.stop();
+                // ★ 解除綁定，防止事件疊加 (解決假傳送/多次觸發問題)
+                Quagga.offDetected(onScanSuccess);
                 isScanning = false;
             }
             document.getElementById('scannerOverlay').classList.add('hidden');
             document.getElementById('scannerOverlay').classList.remove('flex');
+        }
+
+        function onScanSuccess(result) {
+            const code = result.codeResult.code;
+            if (code && code.length > 5) {
+                console.log("Barcode detected and processed : [" + code + "]", result);
+                stopScanner();
+                document.getElementById('inputSKU').value = code;
+                handleScan(code);
+            }
         }
 
         // --- DATA ---
@@ -522,7 +512,6 @@
             }
         };
 
-        // ★★★ 資料庫更新：支援更長的文字 ★★★
         const FAIL_DB = {
             '六大焦慮': ['怕不專業、不會搭', '束縛感、怕太累', '不實穿、怕難顧', '怕沒質感、沒氣場', '怕顯胖、裝嫩/顯老', '捨不得、配不上'],
             '五大痛點': ['副乳、蝴蝶袖', '虎背熊腰、圓肩厚身', '胃凸、顯小腹', '梨形身材、骨盆寬', '臀部扁平、下垂', '蘿蔔O型、顯腿粗'],
@@ -534,8 +523,8 @@
             '成交驅動': ['設計師', '櫃姐推', '急用', '折扣']
         };
         const QUOTES = {
-            FAIL: ["Fail 是積累。", "排除錯誤。", "再接再厲。"],
-            PASS: ["漂亮是選擇。", "體面是底氣。", "信任直覺。"]
+            FAIL: ["每一次 Fail 都是戰略積累。", "排除錯誤，就是一種進度。", "裝備重整，再接再厲。"],
+            PASS: ["漂亮是選擇，體面是底氣。", "流行會過期，骨架會累積。", "從容決策，信任直覺。"]
         };
 
         // --- INIT ---
@@ -555,7 +544,6 @@
                 const items = data[cat].map((item, i) => `
                     <div class="relative h-full">
                         <input type="checkbox" id="${type}_${cat}_${i}" class="${style} hidden peer">
-                        <!-- 增加 min-h-[64px] 和 break-words 以支援長文字換行 -->
                         <label for="${type}_${cat}_${i}" class="flex items-center justify-center text-center py-3 px-2 bg-cocoa-card border-2 border-white/10 rounded-lg text-base font-bold text-cream-dim cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none min-h-[64px] leading-tight break-words">${item}</label>
                     </div>
                 `).join('');
@@ -576,12 +564,16 @@
             if(!val) return;
             val = val.toUpperCase().trim();
 
-            // 1. 去除橫線
-            val = val.replace(/-/g, '');
-
-            // 2. 條碼邏輯
+            // ★★★ 智能條碼擷取防呆機制 ★★★
+            // 如果條碼有橫線 (如 252-0201-88-F)，抓取前兩段組合 (2520201)
+            // 如果沒有橫線，但長度超過7碼，才強行截斷前7碼。
             let sku = val;
-            if (val.length > 7) {
+            if (val.includes('-')) {
+                let parts = val.split('-');
+                if (parts.length >= 2) {
+                    sku = parts[0] + parts[1];
+                }
+            } else if (val.length > 7) {
                 sku = val.substring(0, 7);
             }
             
@@ -664,7 +656,7 @@
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('loadingOverlay').classList.add('flex');
-            document.getElementById('loadingText').innerText = "資料上傳中...";
+            document.getElementById('loadingText').innerText = "資料同步中...";
 
             const payload = {
                 user: CURRENT_USER,
@@ -681,15 +673,25 @@
             };
 
             if (GOOGLE_SCRIPT_URL) {
+                // ★★★ 破除假成功：改用 text/plain 發送，讓瀏覽器不被 CORS preflight 擋住，以獲取真實回傳值 ★★★
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
-                }).then(() => {
-                    showSuccessUI(type);
-                }).catch(err => {
-                    alert("上傳失敗，請檢查網路或是 URL");
+                })
+                .then(response => {
+                    if(!response.ok) throw new Error('網路異常或無效網址');
+                    return response.json();
+                })
+                .then(data => {
+                    if(data.result === 'success') {
+                        showSuccessUI(type);
+                    } else {
+                        throw new Error(data.message || '資料庫拒絕請求');
+                    }
+                })
+                .catch(err => {
+                    alert("上傳失敗，請檢查網路連線或 API 設定: " + err.message);
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 });
             } else {
@@ -737,10 +739,19 @@
             setTimeout(() => {
                 const scenes = ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'];
                 scenes.forEach(id => document.getElementById(id).classList.add('hidden-step'));
+                
+                // 表單清空
                 document.getElementById('inputSKU').value = '';
                 document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
                 document.getElementById('failNote').value = '';
                 
+                // ★★★ 真實重置：將滑桿的數值與顯示，確實歸位 ★★★
+                document.querySelectorAll('.h-slider').forEach(el => el.value = 50);
+                document.querySelectorAll('input[type="range"][orient="vertical"]').forEach(el => el.value = 160);
+                document.getElementById('wValDispGrid').innerText = '50';
+                document.getElementById('hValDispGrid').innerText = '160';
+                
+                // 圖片與佔位符歸位
                 const img = document.getElementById('charImg');
                 img.src = '';
                 img.classList.remove('opacity-100');
