@@ -3,23 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v4.1 | 門市實戰版</title>
+    <title>By PÓSE IFL v4.2 | 掃描強化版</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 換回 html5-qrcode，這是對手機原生相機支援度最高的模組 -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
     <script>
         // ==========================================
-        // ★★★ 請確認填寫您的 Google Apps Script 網址 ★★★
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBi0qaM-8ZB-6YoV7tLnXiskkqPUcLZSXWVDZjxzl2xnNBEGUrHIGrcBjS1B3jFzDM/exec'; 
         // ==========================================
         const GITHUB_USER = 'poone9999-pixel';
         const REPO_NAME = 'pose-ifl';
 
-        // ★★★ 模擬從 member.xlsx 讀取的員工資料庫 ★★★
-        // 格式： '員工代號': '密碼'
         const MEMBER_DB = {
             'A11': '1234',
             'A12': '5678',
@@ -100,9 +97,7 @@
         .sticky-header { position: sticky; top: 0; background: #1C1C1E; z-index: 30; padding-top: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 
-        /* Quagga */
         #reader video { width: 100%; height: 100%; object-fit: cover; }
-        #reader canvas { display: none; }
         .scan-laser { position: absolute; top: 30%; left: 10%; width: 80%; height: 2px; background: #FFD700; box-shadow: 0 0 10px #FFD700; animation: laser 2s infinite alternate; z-index: 20; }
         @keyframes laser { from { top: 30%; } to { top: 70%; } }
     </style>
@@ -111,7 +106,7 @@
 
     <main id="app-container" class="flex flex-col">
 
-        <!-- === LOGIN OVERLAY (安全升級) === -->
+        <!-- === LOGIN OVERLAY === -->
         <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6 absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <h2 class="text-3xl font-black text-gold-m mb-2">PÓSE 系統登入</h2>
             <p class="text-cream-dim mb-8 text-center text-sm">請輸入您的員工代號與密碼</p>
@@ -196,7 +191,6 @@
         <!-- === SCENE 2: EQUIPMENT CARD === -->
         <div id="scene_stats" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 text-center flex flex-col items-center justify-center pt-2">
-                <!-- 商品名獨立一排 -->
                 <p class="text-gold-m font-bold text-sm w-full truncate mb-1" id="statsName">商品名稱載入中...</p>
                 <div class="flex items-center gap-3">
                     <h1 class="text-4xl font-black text-white tracking-tighter leading-none" id="statsSKU">...</h1>
@@ -225,7 +219,7 @@
             </div>
 
             <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
-                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
+                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
@@ -246,7 +240,7 @@
             </div>
         </div>
 
-        <!-- === SCENE 3: CHARACTER SETUP (重構佈局) === -->
+        <!-- === SCENE 3: CHARACTER SETUP === -->
         <div id="scene_char" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark">
             <div class="sticky-header px-4 flex justify-between items-center shrink-0">
                 <span class="text-lg font-bold text-white">請點選客戶樣貌描述</span>
@@ -258,8 +252,6 @@
             </div>
 
             <div class="p-3 bg-cocoa-dark flex-1 flex flex-col gap-3">
-                
-                <!-- 1. 商品資訊 (移到最上方) -->
                 <div class="w-full bg-cocoa-card border border-white/20 rounded-lg p-3 shrink-0">
                     <p class="text-gold-m font-bold text-sm w-full truncate mb-2 border-b border-white/10 pb-2" id="infoName">商品名稱</p>
                     <div class="flex justify-between items-center mb-2">
@@ -273,14 +265,11 @@
                     </div>
                 </div>
 
-                <!-- 2. 身高體重滑桿 (雙橫式，強調必須調整) -->
                 <div class="w-full bg-cocoa-card border border-white/10 rounded-lg p-4 shrink-0 shadow-soft relative overflow-hidden">
-                    <!-- 提示尚未調整的遮罩 -->
                     <div id="sliderWarning" class="absolute inset-0 bg-rose-deep/10 pointer-events-none flex justify-center pt-2 transition-opacity duration-300">
                         <span class="text-xs font-bold text-rose-m tracking-widest"><i class="fas fa-exclamation-circle"></i> 必須滑動調整數值才能送出</span>
                     </div>
 
-                    <!-- 身高 -->
                     <div class="mb-5 relative z-10 pt-4">
                         <div class="flex justify-between items-end mb-2">
                             <span class="text-sm text-cream-dim font-bold">身高 (Height)</span>
@@ -290,7 +279,6 @@
                         <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>150</span><span>180</span></div>
                     </div>
 
-                    <!-- 體重 -->
                     <div class="relative z-10">
                         <div class="flex justify-between items-end mb-2">
                             <span class="text-sm text-cream-dim font-bold">體重 (Weight)</span>
@@ -301,7 +289,6 @@
                     </div>
                 </div>
 
-                <!-- 3. 風格與場景網格 -->
                 <div class="grid grid-cols-3 gap-2 shrink-0">
                     <div class="relative h-16"><input type="radio" name="persona" value="Leader" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">責任型決策</span></label></div>
                     <div class="relative h-16"><input type="radio" name="persona" value="Self" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">風格審美</span></label></div>
@@ -312,7 +299,6 @@
                     <div class="relative h-16"><input type="radio" name="rgb" value="Breathe" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">日常與休閒</span></label></div>
                 </div>
 
-                <!-- 4. 照片顯示區 -->
                 <div class="w-full aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft mb-20">
                     <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-sm font-bold bg-black/50 px-4 py-2 rounded">點選上方按鈕顯示風格</span></div>
@@ -320,7 +306,6 @@
 
             </div>
 
-            <!-- 5. 底部按鈕 (需解鎖) -->
             <div class="sticky-footer">
                 <button id="btnConfirmChar" onclick="confirmChar()" class="w-full py-5 bg-cream text-cocoa-dark font-black text-2xl rounded-xl transition-all duration-300 opacity-40 grayscale cursor-not-allowed" disabled>
                     試穿成交回饋
@@ -431,7 +416,8 @@
             }
         }
 
-        // --- QUAGGA SCANNER LOGIC ---
+        // --- SCANNER LOGIC (切換回強大的 Html5Qrcode，並進行極限鎖定) ---
+        let html5QrCode = null;
         let isScanning = false;
 
         function startScanner() {
@@ -439,55 +425,57 @@
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('scannerOverlay').classList.add('flex');
             
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#reader'), 
-                    constraints: {
-                        facingMode: "environment", 
-                        width: { min: 640, ideal: 1280, max: 1920 }, 
-                        height: { min: 480, ideal: 720, max: 1080 },
-                        aspectRatio: { min: 1, max: 2 }
-                    }
-                },
-                decoder: {
-                    // ★ 關閉 EAN 模組，只鎖定 Code 128 與 Code 39，徹底消滅亂數幻覺
-                    readers: ["code_128_reader", "code_39_reader"]
-                },
-                locate: true, 
-                locator: { patchSize: "medium", halfSample: true }
-            }, function(err) {
-                if (err) {
-                    console.error(err);
-                    alert("相機啟動失敗: " + err);
-                    stopScanner();
-                    return;
-                }
-                console.log("Initialization finished. Ready to start");
-                Quagga.start();
+            if (typeof Html5Qrcode === 'undefined') {
+                alert("相機模組尚未加載，請檢查網路連線");
+                stopScanner();
+                return;
+            }
+
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const config = { 
+                fps: 15, 
+                qrbox: { width: 300, height: 100 }, 
+                aspectRatio: 1.0,
+                // ★ 終極防護：只鎖定 Code 128 與 Code 39，徹底消滅超市 EAN 條碼造成的雜訊干擾
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39
+                ] 
+            };
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess, 
+                onScanFailure
+            ).then(() => {
                 isScanning = true;
-                Quagga.onDetected(onScanSuccess);
+            }).catch(err => {
+                console.error("Camera Error:", err);
+                alert("無法啟動相機。請確認已允許權限。");
+                stopScanner();
             });
         }
 
         function stopScanner() {
-            if (isScanning) {
-                Quagga.stop();
-                Quagga.offDetected(onScanSuccess); // 解除綁定防重複
-                isScanning = false;
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    html5QrCode = null;
+                    isScanning = false;
+                }).catch(err => console.log(err));
             }
             document.getElementById('scannerOverlay').classList.add('hidden');
             document.getElementById('scannerOverlay').classList.remove('flex');
         }
 
-        function onScanSuccess(result) {
-            const code = result.codeResult.code;
-            // ★ 設定長度門檻 >= 8，實體吊牌如 252-0426-51-F 長度絕對足夠，藉此過濾短雜訊
-            if (code && code.length >= 8) {
+        function onScanSuccess(decodedText) {
+            // ★ 長度防線：排除所有小於 7 碼的異常解碼
+            if (decodedText && decodedText.length >= 7) {
                 stopScanner(); 
-                document.getElementById('inputSKU').value = code; 
-                handleScan(code);
+                document.getElementById('inputSKU').value = decodedText; 
+                handleScan(decodedText);
             }
         }
 
@@ -521,7 +509,6 @@
             '外部因素': ['太貴、預算超支', 'CP值不夠', '顯黑', '不喜歡圖案', '沒適合尺碼', '刺癢', '太厚太薄', '逛逛無需求', '需問老公/朋友/媽媽']
         };
         
-        // ★ 依需求全面更新 PASS 銷售語言
         const PASS_DB = {
             '六大成交原因': ['穿起來"氣場"對了', '舒服"自在"不勒不緊', '"實穿百搭"出場率高', '材質好友"質感"', '修飾身形不顯"老氣"', '犒賞自己，我很喜歡'],
             '痛點解決': ['修飾"梨形"身材', '肩線平順/藏副乳', '完美藏小腹', '遮住蝴蝶袖', '視覺大長腿', '穿起來不顯壯'],
@@ -602,12 +589,25 @@
             document.getElementById('loadingOverlay').classList.add('flex');
             document.getElementById('loadingText').innerText = "讀取中...";
             
-            // ★ 修改此處副檔名為大寫 .JPG
-            const imgSrc = `./images/${sku}.JPG`;
             const data = productDB[sku] || productDB['DEFAULT'];
 
             setTimeout(() => {
-                document.getElementById('statsImg').src = imgSrc; 
+                // ★ 雙重圖檔保險：先試 JPG，若失敗自動改試 jpg，若還是沒有才顯示預設無圖
+                const imgEl = document.getElementById('statsImg');
+                imgEl.src = `./images/${sku}.JPG`;
+                
+                imgEl.onerror = function() {
+                    if (!this.dataset.retried) {
+                        this.dataset.retried = 'true';
+                        this.src = `./images/${sku}.jpg`; // 失敗就換小寫再試一次
+                    } else {
+                        this.onerror = null; // 清除 onerror 避免無限迴圈
+                        this.src = 'https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';
+                    }
+                };
+                // 重置保險旗標
+                imgEl.dataset.retried = '';
+                
                 document.getElementById('statsSKU').innerText = sku; 
                 document.getElementById('charSKU').innerText = sku;
                 
@@ -692,7 +692,7 @@
             const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
             const productInfo = `[${document.getElementById('infoName').innerText}] RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
             
-            // ★ 修改此處副檔名為大寫 .JPG
+            // 提交資料的圖檔連結預設使用 .JPG
             const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.JPG`;
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -714,7 +714,7 @@
             };
 
             if (GOOGLE_SCRIPT_URL) {
-                // ★ 破除假成功，強迫讀取回傳值
+                // 破除假成功，強迫讀取回傳值
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
