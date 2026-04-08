@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v4.1 | 實戰穩定版</title>
+    <title>By PÓSE IFL v4.1 | 門市實戰版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
@@ -12,13 +12,19 @@
     
     <script>
         // ==========================================
-        // ★★★ 已填入您的 Google Apps Script 網址 ★★★
+        // ★★★ 請確認填寫您的 Google Apps Script 網址 ★★★
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBi0qaM-8ZB-6YoV7tLnXiskkqPUcLZSXWVDZjxzl2xnNBEGUrHIGrcBjS1B3jFzDM/exec'; 
         // ==========================================
-
-        // ★★★ 請填入您的 GitHub 帳號名稱 (用於產生圖片連結) ★★★
         const GITHUB_USER = 'poone9999-pixel';
         const REPO_NAME = 'pose-ifl';
+
+        // ★★★ 模擬從 member.xlsx 讀取的員工資料庫 ★★★
+        // 格式： '員工代號': '密碼'
+        const MEMBER_DB = {
+            'A11': '1234',
+            'A12': '5678',
+            'NEAL': '2501'
+        };
 
         tailwind.config = {
             theme: {
@@ -45,7 +51,6 @@
     </script>
     
     <style>
-        /* 背景全黑 */
         body { 
             -webkit-tap-highlight-color: transparent; 
             touch-action: manipulation; 
@@ -69,9 +74,8 @@
 
         .btn-touch:active { transform: scale(0.96); }
         .hidden-step { display: none !important; }
-        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
+        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; width: 100%; }
         
-        /* 滑桿圓鈕 */
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
             background: #FFFFFF; 
@@ -81,14 +85,8 @@
             height: 32px; width: 32px; 
             margin-top: -12px; 
         }
-        input[type=range][orient=vertical]::-webkit-slider-thumb { 
-            margin-top: 0; 
-            margin-left: -12px; 
-        }
         
-        .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
-        input[type=range][orient=vertical] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 100%; height: 100%; }
-        input[type=range][orient=vertical]::-webkit-slider-runnable-track { width: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
+        .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; }
         
         .btn-persona { background: #423F30; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
         .chk-persona:checked + .btn-persona { background-color: #FFD700; color: #1C1C1E; border-color: #FFD700; font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
@@ -100,46 +98,37 @@
         .flat-input:focus { outline: none; border-bottom-color: #FFD700; }
         .sticky-footer { position: sticky; bottom: 0; background: #1C1C1E; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); z-index: 50; }
         .sticky-header { position: sticky; top: 0; background: #1C1C1E; z-index: 30; padding-top: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .value-box { background-color: #000; border: 2px solid #555; position: relative; }
-        .vertical-text { writing-mode: vertical-lr; text-orientation: upright; letter-spacing: 0.5rem; }
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 
-        /* Quagga Scanner Styles */
-        #reader video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #reader canvas {
-            display: none; 
-        }
-        .scan-laser {
-            position: absolute;
-            top: 30%;
-            left: 10%;
-            width: 80%;
-            height: 2px;
-            background: #FFD700;
-            box-shadow: 0 0 10px #FFD700;
-            animation: laser 2s infinite alternate;
-            z-index: 20;
-        }
-        @keyframes laser {
-            from { top: 30%; }
-            to { top: 70%; }
-        }
+        /* Quagga */
+        #reader video { width: 100%; height: 100%; object-fit: cover; }
+        #reader canvas { display: none; }
+        .scan-laser { position: absolute; top: 30%; left: 10%; width: 80%; height: 2px; background: #FFD700; box-shadow: 0 0 10px #FFD700; animation: laser 2s infinite alternate; z-index: 20; }
+        @keyframes laser { from { top: 30%; } to { top: 70%; } }
     </style>
 </head>
 <body>
 
     <main id="app-container" class="flex flex-col">
 
-        <!-- LOGIN OVERLAY -->
+        <!-- === LOGIN OVERLAY (安全升級) === -->
         <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6 absolute w-full max-w-[450px] mx-auto left-0 right-0">
-            <h2 class="text-3xl font-black text-gold-m mb-6">人員識別</h2>
-            <p class="text-cream-dim mb-4 text-center">請輸入您的 櫃點/姓名<br>(只需輸入一次)</p>
-            <input type="text" id="loginName" class="w-full flat-input text-3xl py-2 mb-8" placeholder="例如: A11-Annie">
-            <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl">確認進入</button>
+            <h2 class="text-3xl font-black text-gold-m mb-2">PÓSE 系統登入</h2>
+            <p class="text-cream-dim mb-8 text-center text-sm">請輸入您的員工代號與密碼</p>
+            
+            <div class="w-full space-y-6 mb-8">
+                <div>
+                    <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">員工代號 (Account)</label>
+                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="例如: NEAL">
+                </div>
+                <div>
+                    <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">授權密碼 (Password)</label>
+                    <input type="password" id="loginPwd" class="w-full flat-input text-2xl py-2" placeholder="••••">
+                </div>
+            </div>
+            
+            <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl shadow-soft btn-touch">驗證登入</button>
+            <p id="loginError" class="text-rose-m text-sm mt-4 hidden font-bold">帳號或密碼錯誤，請重新輸入</p>
         </div>
 
         <!-- CAMERA SCANNER OVERLAY -->
@@ -147,21 +136,16 @@
             <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
                 <span class="text-white font-bold">掃描條碼</span>
                 <button onclick="stopScanner()" class="text-white text-2xl px-4 py-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            
             <div class="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
                 <div id="reader" class="w-full h-full absolute inset-0"></div>
                 <div class="absolute w-[80%] h-[30%] border-2 border-gold-m/70 rounded-lg z-20 pointer-events-none flex flex-col justify-between">
-                    <div class="w-full h-1 bg-gold-m/30"></div>
-                    <div class="w-full h-1 bg-gold-m/30"></div>
+                    <div class="w-full h-1 bg-gold-m/30"></div><div class="w-full h-1 bg-gold-m/30"></div>
                 </div>
                 <div class="scan-laser"></div>
             </div>
-
             <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4 z-30">
                 <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準框線</p>
                 <p class="text-xs text-white/50">支援格式: Code 128 / Code 39 / EAN</p>
@@ -176,10 +160,9 @@
 
         <!-- === SCENE 1: SCAN === -->
         <div id="scene_scan" class="step-container h-screen flex flex-col px-6 bg-cocoa-dark relative">
-            
             <div class="absolute top-4 left-4 text-xs text-cream-dim z-10">
                 User: <span id="currentUserDisplay" class="text-gold-m font-bold">...</span>
-                <button onclick="logout()" class="ml-2 text-white/30 underline">更換</button>
+                <button onclick="logout()" class="ml-2 text-white/30 underline">登出</button>
             </div>
 
             <div class="mt-16 mb-6 text-center shrink-0">
@@ -205,27 +188,22 @@
                     <span class="text-xs text-white/30 uppercase tracking-widest">或 手動輸入</span>
                     <div class="h-px bg-white/10 flex-1"></div>
                 </div>
-                
-                <input type="text" id="inputSKU" placeholder="例如: 2520201" 
-                       class="w-full flat-input text-3xl py-3 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white"
-                       onkeyup="if(event.key==='Enter') handleScan(this.value)">
-                
-                <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors">
-                    確認送出 (GO)
-                </button>
+                <input type="text" id="inputSKU" placeholder="例如: 2520201" class="w-full flat-input text-3xl py-3 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white" onkeyup="if(event.key==='Enter') handleScan(this.value)">
+                <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors">確認送出 (GO)</button>
             </div>
-
         </div>
 
         <!-- === SCENE 2: EQUIPMENT CARD === -->
         <div id="scene_stats" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
-            <div class="sticky-header px-4 text-center flex items-center justify-center gap-3">
-                <h1 class="text-4xl font-black text-white tracking-tighter leading-none" id="statsSKU">...</h1>
-                <span class="inline-block bg-gold-m text-cocoa-dark text-xs font-black px-1.5 py-0.5 rounded">SSR</span>
-                <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors absolute right-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
+            <div class="sticky-header px-4 text-center flex flex-col items-center justify-center pt-2">
+                <!-- 商品名獨立一排 -->
+                <p class="text-gold-m font-bold text-sm w-full truncate mb-1" id="statsName">商品名稱載入中...</p>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-4xl font-black text-white tracking-tighter leading-none" id="statsSKU">...</h1>
+                    <span class="inline-block bg-gold-m text-cocoa-dark text-xs font-black px-1.5 py-0.5 rounded">SSR</span>
+                </div>
+                <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors absolute right-4 top-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                 </button>
             </div>
 
@@ -240,21 +218,14 @@
                         <div class="text-2xl font-black text-white" id="statsHitvox">-</div>
                     </div>
                     <div class="bg-cocoa-card rounded-lg p-1 flex flex-col justify-center border border-white/10 gap-0.5">
-                        <div class="flex justify-between items-center px-1">
-                            <span class="text-[10px] text-rose-m font-bold">ATK</span>
-                            <span class="text-xs text-white font-bold" id="statsPain">-</span>
-                        </div>
-                        <div class="flex justify-between items-center px-1">
-                            <span class="text-[10px] text-jade-m font-bold">DEF</span>
-                            <span class="text-xs text-white font-bold" id="statsAnxiety">-</span>
-                        </div>
+                        <div class="flex justify-between items-center px-1"><span class="text-[10px] text-rose-m font-bold">ATK</span><span class="text-xs text-white font-bold" id="statsPain">-</span></div>
+                        <div class="flex justify-between items-center px-1"><span class="text-[10px] text-jade-m font-bold">DEF</span><span class="text-xs text-white font-bold" id="statsAnxiety">-</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
-                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" 
-                     onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
+                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
@@ -269,76 +240,91 @@
 
             <div class="sticky-footer flex gap-3">
                 <button onclick="goToCharSetup()" class="w-full py-5 bg-gold-m text-cocoa-dark text-2xl font-black rounded-xl shadow-soft btn-touch flex items-center justify-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                    <span>為客著裝</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                    <span>客戶描述+試穿成交結果</span>
                 </button>
             </div>
         </div>
 
-        <!-- === SCENE 3: CHARACTER SETUP === -->
+        <!-- === SCENE 3: CHARACTER SETUP (重構佈局) === -->
         <div id="scene_char" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark">
             <div class="sticky-header px-4 flex justify-between items-center shrink-0">
-                <span class="text-lg font-bold text-white">客戶設定</span>
+                <span class="text-lg font-bold text-white">請點選客戶樣貌描述</span>
                 <div class="flex items-center gap-3">
-                    <span class="text-3xl font-black text-gold-m" id="charSKU">...</span>
                     <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="p-2 bg-cocoa-dark">
-                <div class="grid grid-cols-4 gap-1 mb-1">
-                    <div class="col-span-3 grid grid-cols-3 gap-1 h-14">
-                        <div class="relative h-full"><input type="radio" name="persona" value="Leader" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">LEADER</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="persona" value="Self" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">SELF</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="persona" value="CP" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('CP')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">CP</span></label></div>
-                    </div>
-                    <div class="col-span-1 h-14 value-box rounded flex flex-col items-center justify-center"><span class="text-[10px] text-blue-slider font-bold">身高 cm</span><span class="text-2xl font-black text-white leading-none"><span id="hValDispGrid">160</span></span></div>
-
-                    <div class="col-span-3 grid grid-cols-3 gap-1 h-14">
-                        <div class="relative h-full"><input type="radio" name="rgb" value="Root" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">ROOT</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="rgb" value="Glow" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">GLOW</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="rgb" value="Breathe" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">BREATHE</span></label></div>
-                    </div>
-                    <div class="col-span-1 h-14 value-box rounded flex flex-col items-center justify-center"><span class="text-[10px] text-blue-slider font-bold">體重 kg</span><span class="text-2xl font-black text-white leading-none"><span id="wValDispGrid">50</span></span></div>
-                </div>
-
-                <div class="grid grid-cols-4 gap-1 h-auto items-stretch">
-                    <div class="col-span-3 aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft">
-                        <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
-                        <div class="absolute bottom-0 left-0 right-10 h-20 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-5 z-10">
-                            <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
-                            <input type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="document.getElementById('wValDispGrid').innerText=this.value">
-                        </div>
-                        <div class="absolute top-0 bottom-0 right-0 w-14 bg-gradient-to-l from-black/90 to-transparent flex flex-col items-center justify-between py-4 z-10">
-                            <span class="text-[10px] text-white/70 font-bold">180</span>
-                            <div class="h-full py-2"><input type="range" orient="vertical" min="150" max="180" value="160" oninput="document.getElementById('hValDispGrid').innerText=this.value"></div>
-                            <span class="text-[10px] text-white/70 font-bold">150</span>
-                        </div>
-                    </div>
-
-                    <div class="col-span-1 h-full">
-                        <button onclick="confirmChar()" class="w-full h-full bg-cream text-cocoa-dark rounded-lg shadow-soft btn-touch flex flex-col items-center justify-center border-2 border-white/20 hover:bg-white transition-colors">
-                            <span class="vertical-text text-xl font-black">試穿銷售結果</span>
-                            <i class="fas fa-arrow-down mt-2 text-gold-m animate-bounce"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="mt-2 w-full bg-cocoa-card border border-white/20 rounded-lg p-3">
-                    <div class="flex justify-between items-center mb-2 border-b border-white/5 pb-2">
+            <div class="p-3 bg-cocoa-dark flex-1 flex flex-col gap-3">
+                
+                <!-- 1. 商品資訊 (移到最上方) -->
+                <div class="w-full bg-cocoa-card border border-white/20 rounded-lg p-3 shrink-0">
+                    <p class="text-gold-m font-bold text-sm w-full truncate mb-2 border-b border-white/10 pb-2" id="infoName">商品名稱</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-cream-dim">SKU <span class="text-white font-bold text-lg ml-1" id="infoSKU">...</span></span>
                         <span class="text-xs text-cream-dim">RGB <span class="text-gold-m font-bold text-lg ml-1" id="infoRGB">-</span></span>
-                        <span class="text-xs text-cream-dim">SWITCH <span class="text-gold-m font-bold text-lg ml-1" id="infoSwitch">-</span></span>
+                        <span class="text-xs text-cream-dim">SW <span class="text-gold-m font-bold text-lg ml-1" id="infoSwitch">-</span></span>
                         <span class="text-xs text-cream-dim">骨架 <span class="text-white font-bold text-lg ml-1" id="infoHitvox">-</span></span>
                     </div>
                     <div class="border-l-4 border-gold-m pl-2">
-                        <p class="text-lg font-bold text-white leading-snug" id="infoBrief">...</p>
+                        <p class="text-sm font-bold text-white leading-snug" id="infoBrief">...</p>
                     </div>
                 </div>
+
+                <!-- 2. 身高體重滑桿 (雙橫式，強調必須調整) -->
+                <div class="w-full bg-cocoa-card border border-white/10 rounded-lg p-4 shrink-0 shadow-soft relative overflow-hidden">
+                    <!-- 提示尚未調整的遮罩 -->
+                    <div id="sliderWarning" class="absolute inset-0 bg-rose-deep/10 pointer-events-none flex justify-center pt-2 transition-opacity duration-300">
+                        <span class="text-xs font-bold text-rose-m tracking-widest"><i class="fas fa-exclamation-circle"></i> 必須滑動調整數值才能送出</span>
+                    </div>
+
+                    <!-- 身高 -->
+                    <div class="mb-5 relative z-10 pt-4">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm text-cream-dim font-bold">身高 (Height)</span>
+                            <span class="text-3xl font-black text-white"><span id="hValDispGrid">160</span><span class="text-sm text-cream-dim ml-1">cm</span></span>
+                        </div>
+                        <input type="range" class="h-slider" min="150" max="180" value="160" oninput="markSliderAdjusted('height'); document.getElementById('hValDispGrid').innerText=this.value">
+                        <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>150</span><span>180</span></div>
+                    </div>
+
+                    <!-- 體重 -->
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm text-cream-dim font-bold">體重 (Weight)</span>
+                            <span class="text-3xl font-black text-white"><span id="wValDispGrid">50</span><span class="text-sm text-cream-dim ml-1">kg</span></span>
+                        </div>
+                        <input type="range" class="h-slider" min="40" max="80" value="50" oninput="markSliderAdjusted('weight'); document.getElementById('wValDispGrid').innerText=this.value">
+                        <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>40</span><span>80</span></div>
+                    </div>
+                </div>
+
+                <!-- 3. 風格與場景網格 -->
+                <div class="grid grid-cols-3 gap-2 shrink-0">
+                    <div class="relative h-16"><input type="radio" name="persona" value="Leader" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">責任型決策</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="Self" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">風格審美</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="CP" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('CP')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">實用型選擇</span></label></div>
+                    
+                    <div class="relative h-16"><input type="radio" name="rgb" value="Root" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">職場與正式</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="rgb" value="Glow" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">聚會與儀式</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="rgb" value="Breathe" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">日常與休閒</span></label></div>
+                </div>
+
+                <!-- 4. 照片顯示區 -->
+                <div class="w-full aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft mb-20">
+                    <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-sm font-bold bg-black/50 px-4 py-2 rounded">點選上方按鈕顯示風格</span></div>
+                </div>
+
+            </div>
+
+            <!-- 5. 底部按鈕 (需解鎖) -->
+            <div class="sticky-footer">
+                <button id="btnConfirmChar" onclick="confirmChar()" class="w-full py-5 bg-cream text-cocoa-dark font-black text-2xl rounded-xl transition-all duration-300 opacity-40 grayscale cursor-not-allowed" disabled>
+                    試穿成交回饋
+                </button>
             </div>
         </div>
 
@@ -348,13 +334,11 @@
             <div class="flex-1 flex flex-col gap-4 justify-center pb-10">
                 <button onclick="goToLog('PASS')" class="flex-1 bg-jade-deep border-4 border-jade-m rounded-2xl flex flex-col items-center justify-center gap-2 btn-touch shadow-soft">
                     <i class="fas fa-check text-6xl text-white mb-2"></i>
-                    <span class="text-4xl font-black text-white tracking-widest">成 交</span>
-                    <span class="text-sm font-bold text-white/70 opacity-80 uppercase tracking-widest">DEAL / PASS</span>
+                    <span class="text-4xl font-black text-white tracking-widest">成交回饋</span>
                 </button>
                 <button onclick="goToLog('FAIL')" class="flex-1 bg-rose-deep border-4 border-rose-m rounded-2xl flex flex-col items-center justify-center gap-2 btn-touch shadow-soft">
                     <i class="fas fa-times text-6xl text-white mb-2"></i>
-                    <span class="text-4xl font-black text-white tracking-widest">排除錯誤</span>
-                    <span class="text-sm font-bold text-white/70 opacity-80 uppercase tracking-widest">FAIL DIAGNOSIS</span>
+                    <span class="text-4xl font-black text-white tracking-widest">不購買原因</span>
                 </button>
             </div>
         </div>
@@ -362,7 +346,7 @@
         <!-- === SCENE 5: LOG FAIL === -->
         <div id="scene_log_fail" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-rose-m bg-cocoa-dark z-30">
-                <span class="text-2xl font-black text-rose-m">FAIL 原因</span>
+                <span class="text-2xl font-black text-rose-m">不購買原因</span>
                 <button onclick="backToVerdict()" class="px-4 py-2 bg-white/10 rounded-lg text-white font-bold text-lg">返回</button>
             </div>
             <div class="flex-1 overflow-y-auto p-4">
@@ -375,19 +359,19 @@
                     </div>
                 </div>
             </div>
-            <div class="sticky-footer px-4"><button onclick="submitLog('FAIL')" class="w-full py-5 bg-rose-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄 (FAIL)</button></div>
+            <div class="sticky-footer px-4"><button onclick="submitLog('FAIL')" class="w-full py-5 bg-rose-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄</button></div>
         </div>
 
         <!-- === SCENE 5: LOG PASS === -->
         <div id="scene_log_pass" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-jade-m bg-cocoa-dark z-30">
-                <span class="text-2xl font-black text-jade-m">PASS 原因</span>
+                <span class="text-2xl font-black text-jade-m">成交回饋</span>
                 <button onclick="backToVerdict()" class="px-4 py-2 bg-white/10 rounded-lg text-white font-bold text-lg">返回</button>
             </div>
             <div class="flex-1 overflow-y-auto p-4">
                 <div id="passCats"></div>
             </div>
-            <div class="sticky-footer px-4"><button onclick="submitLog('PASS')" class="w-full py-5 bg-jade-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄 (PASS)</button></div>
+            <div class="sticky-footer px-4"><button onclick="submitLog('PASS')" class="w-full py-5 bg-jade-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄</button></div>
         </div>
 
         <!-- === SCENE 6: SUCCESS === -->
@@ -404,7 +388,7 @@
     </main>
 
     <script>
-        // --- USER AUTH LOGIC ---
+        // --- USER AUTH LOGIC (升級為密碼驗證) ---
         let CURRENT_USER = '';
 
         function checkUser() {
@@ -419,17 +403,29 @@
         }
 
         function saveUser() {
-            const val = document.getElementById('loginName').value.trim();
-            if (val) {
-                localStorage.setItem('ifl_user', val);
+            const id = document.getElementById('loginId').value.trim().toUpperCase();
+            const pwd = document.getElementById('loginPwd').value.trim();
+            const err = document.getElementById('loginError');
+
+            if (!id || !pwd) {
+                err.innerText = "請填寫完整資訊";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            // 驗證邏輯：比對模擬的 MEMBER_DB
+            if (MEMBER_DB[id] && MEMBER_DB[id] === pwd) {
+                localStorage.setItem('ifl_user', id);
+                err.classList.add('hidden');
                 checkUser();
             } else {
-                alert("請輸入櫃點/姓名");
+                err.innerText = "帳號或密碼錯誤，請重新輸入";
+                err.classList.remove('hidden');
             }
         }
 
         function logout() {
-            if(confirm("確定要更換人員登入嗎？")) {
+            if(confirm("確定要登出並更換人員嗎？")) {
                 localStorage.removeItem('ifl_user');
                 location.reload();
             }
@@ -467,11 +463,8 @@
                     stopScanner();
                     return;
                 }
-                console.log("Initialization finished. Ready to start");
                 Quagga.start();
                 isScanning = true;
-                
-                // ★ 綁定掃描事件
                 Quagga.onDetected(onScanSuccess);
             });
         }
@@ -479,8 +472,7 @@
         function stopScanner() {
             if (isScanning) {
                 Quagga.stop();
-                // ★ 解除綁定，防止事件疊加 (解決假傳送/多次觸發問題)
-                Quagga.offDetected(onScanSuccess);
+                Quagga.offDetected(onScanSuccess); // 解除綁定防重複
                 isScanning = false;
             }
             document.getElementById('scannerOverlay').classList.add('hidden');
@@ -490,9 +482,8 @@
         function onScanSuccess(result) {
             const code = result.codeResult.code;
             if (code && code.length > 5) {
-                console.log("Barcode detected and processed : [" + code + "]", result);
-                stopScanner();
-                document.getElementById('inputSKU').value = code;
+                stopScanner(); 
+                document.getElementById('inputSKU').value = code; 
                 handleScan(code);
             }
         }
@@ -506,9 +497,16 @@
         
         const productDB = {
             'DEFAULT': { 
+                name: 'POONE 經典預設款商品',
                 brief: '視覺少3公分神褲，針對亞洲梨形身材修正。',
                 rgb: 'R+B', switch: 'S', hitvox: '挺',
                 atk: '消假胯寬', def: '防撐不住'
+            },
+            '2520201': { // 測試用商品
+                name: 'POONE 細閃亮點V領簍空針織背心',
+                brief: '輕盈透氣簍空設計，細閃光澤提升質感。',
+                rgb: 'G+R', switch: 'W', hitvox: '柔',
+                atk: '顯鎖骨', def: '修肩頸'
             }
         };
 
@@ -517,15 +515,40 @@
             '五大痛點': ['副乳、蝴蝶袖', '虎背熊腰、圓肩厚身', '胃凸、顯小腹', '梨形身材、骨盆寬', '臀部扁平、下垂', '蘿蔔O型、顯腿粗'],
             '外部因素': ['太貴、預算超支', 'CP值不夠', '顯黑', '不喜歡圖案', '沒適合尺碼', '刺癢', '太厚太薄', '逛逛無需求', '需問老公/朋友/媽媽']
         };
+        
+        // ★ 依需求全面更新 PASS 銷售語言
         const PASS_DB = {
-            '六大態度': ['掌握感', '有支撐', '不後悔', '有界線', '是本我', '很值得'],
-            '痛點解決': ['修假胯', '薄背', '收腹', '藏手臂', '長腿'],
-            '成交驅動': ['設計師', '櫃姐推', '急用', '折扣']
+            '六大成交原因': ['穿起來"氣場"對了', '舒服"自在"不勒不緊', '"實穿百搭"出場率高', '材質好友"質感"', '修飾身形不顯"老氣"', '犒賞自己，我很喜歡'],
+            '痛點解決': ['修飾"梨形"身材', '肩線平順/藏副乳', '完美藏小腹', '遮住蝴蝶袖', '視覺大長腿', '穿起來不顯壯'],
+            '成交驅動': ['風格一眼就愛上', '櫃姐介紹很精準', '有場合要穿可對應', '活動打折助成交', '版型/材質超適合', '朋友/家人說好看']
         };
+        
         const QUOTES = {
-            FAIL: ["每一次 Fail 都是戰略積累。", "排除錯誤，就是一種進度。", "裝備重整，再接再厲。"],
-            PASS: ["漂亮是選擇，體面是底氣。", "流行會過期，骨架會累積。", "從容決策，信任直覺。"]
+            FAIL: ["每一次的拒絕，都是為了下次精準出擊。", "排除不適合，我們離對的客人更近。", "記錄下來，裝備重整。"],
+            PASS: ["漂亮是選擇，體面是底氣。", "精準推薦，信任直覺。", "了解客人，就能創造價值。"]
         };
+
+        // --- SLIDER LOGIC ---
+        let isHeightAdjusted = false;
+        let isWeightAdjusted = false;
+
+        function markSliderAdjusted(type) {
+            if (type === 'height') isHeightAdjusted = true;
+            if (type === 'weight') isWeightAdjusted = true;
+            checkSliders();
+        }
+
+        function checkSliders() {
+            const btn = document.getElementById('btnConfirmChar');
+            const warning = document.getElementById('sliderWarning');
+            // 如果兩者都動過，解鎖按鈕
+            if (isHeightAdjusted && isWeightAdjusted) {
+                btn.classList.remove('opacity-40', 'grayscale', 'cursor-not-allowed');
+                btn.classList.add('btn-touch', 'shadow-soft');
+                btn.disabled = false;
+                if(warning) warning.classList.add('opacity-0');
+            }
+        }
 
         // --- INIT ---
         window.onload = function() {
@@ -564,16 +587,9 @@
             if(!val) return;
             val = val.toUpperCase().trim();
 
-            // ★★★ 智能條碼擷取防呆機制 ★★★
-            // 如果條碼有橫線 (如 252-0201-88-F)，抓取前兩段組合 (2520201)
-            // 如果沒有橫線，但長度超過7碼，才強行截斷前7碼。
+            val = val.replace(/-/g, '');
             let sku = val;
-            if (val.includes('-')) {
-                let parts = val.split('-');
-                if (parts.length >= 2) {
-                    sku = parts[0] + parts[1];
-                }
-            } else if (val.length > 7) {
+            if (val.length > 7) {
                 sku = val.substring(0, 7);
             }
             
@@ -589,6 +605,8 @@
                 document.getElementById('statsSKU').innerText = sku; 
                 document.getElementById('charSKU').innerText = sku;
                 
+                // 更新第一頁資料
+                document.getElementById('statsName').innerText = data.name;
                 document.getElementById('statsBrief').innerText = `"${data.brief}"`;
                 document.getElementById('statsRGB').innerText = data.rgb;
                 document.getElementById('statsSwitch').innerText = data.switch;
@@ -596,6 +614,9 @@
                 document.getElementById('statsPain').innerText = data.atk;
                 document.getElementById('statsAnxiety').innerText = data.def;
 
+                // 更新第二頁頂部資料格
+                document.getElementById('infoName').innerText = data.name;
+                document.getElementById('infoSKU').innerText = sku;
                 document.getElementById('infoRGB').innerText = data.rgb;
                 document.getElementById('infoSwitch').innerText = data.switch;
                 document.getElementById('infoHitvox').innerText = data.hitvox;
@@ -610,7 +631,12 @@
         
         function updateVisuals(key) {
             const img = document.getElementById('charImg');
-            img.src = personas[key];
+            // 此處寫死對應的檔名
+            let filename = 'leader';
+            if(key==='Self') filename='self';
+            if(key==='CP') filename='cp';
+            
+            img.src = `./images/${filename}.jpg`;
             img.classList.remove('opacity-50');
             img.classList.add('opacity-100');
             document.getElementById('charPlaceholder').style.display = 'none';
@@ -619,7 +645,15 @@
         function confirmChar() {
             const p = document.querySelector('input[name="persona"]:checked');
             const r = document.querySelector('input[name="rgb"]:checked');
-            if(!p || !r) { alert('請點選 [風格] 與 [場景]'); return; }
+            
+            if(!p || !r) { 
+                alert('請點選 [客戶風格] 與 [穿著場景]'); 
+                return; 
+            }
+            if(!isHeightAdjusted || !isWeightAdjusted) {
+                alert('請先滑動調整顧客的「真實身高」與「體重」');
+                return;
+            }
             switchScene('scene_char', 'scene_verdict');
         }
 
@@ -644,13 +678,13 @@
             if(checks.length === 0) { alert('請至少勾選一個原因'); return; }
 
             const sku = document.getElementById('statsSKU').innerText; 
-            const persona = document.querySelector('input[name="persona"]:checked')?.value || 'Unknown';
-            const scene = document.querySelector('input[name="rgb"]:checked')?.value || 'Unknown';
+            const persona = document.querySelector('input[name="persona"]:checked')?.nextElementSibling.innerText || 'Unknown';
+            const scene = document.querySelector('input[name="rgb"]:checked')?.nextElementSibling.innerText || 'Unknown';
             const height = document.getElementById('hValDispGrid').innerText;
             const weight = document.getElementById('wValDispGrid').innerText;
             const reasons = Array.from(checks).map(c => c.nextElementSibling.innerText).join(', ');
             const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
-            const productInfo = `RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
+            const productInfo = `[${document.getElementById('infoName').innerText}] RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
             
             const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.jpg`;
 
@@ -673,25 +707,25 @@
             };
 
             if (GOOGLE_SCRIPT_URL) {
-                // ★★★ 破除假成功：改用 text/plain 發送，讓瀏覽器不被 CORS preflight 擋住，以獲取真實回傳值 ★★★
+                // ★ 破除假成功，強迫讀取回傳值
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 })
                 .then(response => {
-                    if(!response.ok) throw new Error('網路異常或無效網址');
+                    if(!response.ok) throw new Error('網路異常');
                     return response.json();
                 })
                 .then(data => {
                     if(data.result === 'success') {
                         showSuccessUI(type);
                     } else {
-                        throw new Error(data.message || '資料庫拒絕請求');
+                        throw new Error(data.message || '資料庫寫入拒絕');
                     }
                 })
                 .catch(err => {
-                    alert("上傳失敗，請檢查網路連線或 API 設定: " + err.message);
+                    alert("上傳失敗，請檢查網路連線或 API: " + err.message);
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 });
             } else {
@@ -709,13 +743,13 @@
                 icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>';
                 msg.innerText = QUOTES.FAIL[Math.floor(Math.random() * QUOTES.FAIL.length)];
                 msg.className = "text-3xl font-bold text-rose-m leading-relaxed";
-                title.innerText = "已紀錄 FAIL";
+                title.innerText = "已紀錄不購買原因";
             } else {
                 icon.className = "w-32 h-32 rounded-full border-8 border-jade-m text-jade-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
                 icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
                 msg.innerText = QUOTES.PASS[Math.floor(Math.random() * QUOTES.PASS.length)];
                 msg.className = "text-3xl font-bold text-jade-m leading-relaxed";
-                title.innerText = "已紀錄 PASS";
+                title.innerText = "已紀錄成交回饋";
             }
 
             document.getElementById('scene_log_fail').classList.add('hidden-step');
@@ -735,7 +769,8 @@
         function resetApp() {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('loadingOverlay').classList.add('flex');
-            document.getElementById('loadingText').innerText = "讀取中...";
+            document.getElementById('loadingText').innerText = "重置中...";
+            
             setTimeout(() => {
                 const scenes = ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'];
                 scenes.forEach(id => document.getElementById(id).classList.add('hidden-step'));
@@ -745,13 +780,22 @@
                 document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
                 document.getElementById('failNote').value = '';
                 
-                // ★★★ 真實重置：將滑桿的數值與顯示，確實歸位 ★★★
+                // ★ 真重置：鎖住按鈕與拉桿數值
+                isHeightAdjusted = false;
+                isWeightAdjusted = false;
+                const btn = document.getElementById('btnConfirmChar');
+                btn.classList.add('opacity-40', 'grayscale', 'cursor-not-allowed');
+                btn.classList.remove('btn-touch', 'shadow-soft');
+                btn.disabled = true;
+                
+                const warning = document.getElementById('sliderWarning');
+                if(warning) warning.classList.remove('opacity-0');
+
                 document.querySelectorAll('.h-slider').forEach(el => el.value = 50);
-                document.querySelectorAll('input[type="range"][orient="vertical"]').forEach(el => el.value = 160);
+                document.querySelectorAll('.h-slider[min="150"]').forEach(el => el.value = 160);
                 document.getElementById('wValDispGrid').innerText = '50';
                 document.getElementById('hValDispGrid').innerText = '160';
                 
-                // 圖片與佔位符歸位
                 const img = document.getElementById('charImg');
                 img.src = '';
                 img.classList.remove('opacity-100');
@@ -760,7 +804,7 @@
 
                 document.getElementById('scene_scan').classList.remove('hidden-step');
                 document.getElementById('loadingOverlay').classList.add('hidden');
-            }, 500);
+            }, 400);
         }
 
         function startDictation(targetId) {
@@ -771,7 +815,7 @@
                 recognition.lang = "zh-TW";
                 recognition.start();
                 recognition.onresult = function(e) { document.getElementById(targetId).value += e.results[0][0].transcript; recognition.stop(); };
-            } else { alert("瀏覽器不支援，請手動輸入"); }
+            } else { alert("瀏覽器不支援語音輸入"); }
         }
     </script>
 </body>
