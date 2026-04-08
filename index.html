@@ -148,7 +148,7 @@
             </div>
             <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4 z-30">
                 <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準框線</p>
-                <p class="text-xs text-white/50">支援格式: Code 128 / Code 39 / EAN</p>
+                <p class="text-xs text-white/50">支援格式: Code 128 / Code 39</p>
             </div>
         </div>
 
@@ -464,6 +464,7 @@
                     stopScanner();
                     return;
                 }
+                console.log("Initialization finished. Ready to start");
                 Quagga.start();
                 isScanning = true;
                 Quagga.onDetected(onScanSuccess);
@@ -601,7 +602,8 @@
             document.getElementById('loadingOverlay').classList.add('flex');
             document.getElementById('loadingText').innerText = "讀取中...";
             
-            const imgSrc = `./images/${sku}.jpg`;
+            // ★ 修改此處副檔名為大寫 .JPG
+            const imgSrc = `./images/${sku}.JPG`;
             const data = productDB[sku] || productDB['DEFAULT'];
 
             setTimeout(() => {
@@ -690,7 +692,8 @@
             const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
             const productInfo = `[${document.getElementById('infoName').innerText}] RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
             
-            const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.jpg`;
+            // ★ 修改此處副檔名為大寫 .JPG
+            const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.JPG`;
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('loadingOverlay').classList.add('flex');
