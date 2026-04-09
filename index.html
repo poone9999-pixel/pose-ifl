@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v5.0 | 門市實戰版</title>
+    <title>By PÓSE IFL v5.0 | 門市作業系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <!-- Quagga2 掃描核心 -->
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -73,6 +72,7 @@
         .btn-touch:active { transform: scale(0.96); }
         .hidden-step { display: none !important; }
         
+        /* 滑桿樣式 */
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; width: 100%; }
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
@@ -85,6 +85,7 @@
         }
         .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; }
         
+        /* 選擇按鈕樣式 */
         .btn-persona, .btn-scene { background: #423F30; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
         .chk-persona:checked + .btn-persona { background-color: #FFD700; color: #1C1C1E; border-color: #FFD700; font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
         .chk-scene:checked + .btn-scene { background-color: #81BECE; color: #1C1C1E; border-color: #81BECE; font-weight: 900; box-shadow: 0 0 10px rgba(129, 190, 206, 0.4); }
@@ -98,6 +99,7 @@
         .sticky-header { position: sticky; top: 0; background: #1C1C1E; z-index: 30; padding-top: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 
+        /* 掃描器樣式 */
         #reader video { width: 100%; height: 100%; object-fit: cover; }
         #reader canvas { display: none; }
         .scan-laser { position: absolute; top: 30%; left: 10%; width: 80%; height: 2px; background: #FFD700; box-shadow: 0 0 10px #FFD700; animation: laser 2s infinite alternate; z-index: 20; }
@@ -220,7 +222,7 @@
             </div>
 
             <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
-                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90">
+                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
@@ -241,7 +243,7 @@
             </div>
         </div>
 
-        <!-- === SCENE 3: CHARACTER SETUP (強制防呆與新佈局) === -->
+        <!-- === SCENE 3: CHARACTER SETUP === -->
         <div id="scene_char" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark">
             <div class="sticky-header px-4 flex justify-between items-center shrink-0">
                 <span class="text-lg font-bold text-white">請點選客戶樣貌描述</span>
@@ -279,7 +281,7 @@
                             <span class="text-sm text-cream-dim font-bold">身高 (Height)</span>
                             <span class="text-3xl font-black text-white"><span id="hValDispGrid">160</span><span class="text-sm text-cream-dim ml-1">cm</span></span>
                         </div>
-                        <input type="range" class="h-slider" min="150" max="180" value="160" oninput="markSliderAdjusted('height'); document.getElementById('hValDispGrid').innerText=this.value">
+                        <input type="range" id="heightSlider" class="h-slider" min="150" max="180" value="160" oninput="markSliderAdjusted('height'); syncHeightDisplay(this.value)">
                         <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>150</span><span>180</span></div>
                     </div>
 
@@ -288,16 +290,16 @@
                             <span class="text-sm text-cream-dim font-bold">體重 (Weight)</span>
                             <span class="text-3xl font-black text-white"><span id="wValDispGrid">50</span><span class="text-sm text-cream-dim ml-1">kg</span></span>
                         </div>
-                        <input type="range" class="h-slider" min="40" max="80" value="50" oninput="markSliderAdjusted('weight'); document.getElementById('wValDispGrid').innerText=this.value">
+                        <input type="range" id="weightSlider" class="h-slider" min="40" max="80" value="50" oninput="markSliderAdjusted('weight'); syncWeightDisplay(this.value)">
                         <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>40</span><span>80</span></div>
                     </div>
                 </div>
 
                 <!-- 3. 風格與場景網格 (門市黑話) -->
                 <div class="grid grid-cols-3 gap-2 shrink-0">
-                    <div class="relative h-16"><input type="radio" name="persona" value="責任型決策" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">責任型決策</span></label></div>
-                    <div class="relative h-16"><input type="radio" name="persona" value="風格審美" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">風格審美</span></label></div>
-                    <div class="relative h-16"><input type="radio" name="persona" value="實用型選擇" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('CP')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">實用型選擇</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="責任型決策" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('責任型決策')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">責任型決策</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="風格審美" id="p_self" class="chk-persona hidden" onchange="updateVisuals('風格審美')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">風格審美</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="實用型選擇" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('實用型選擇')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">實用型選擇</span></label></div>
                     
                     <div class="relative h-16"><input type="radio" name="rgb" value="職場與正式" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">職場與正式</span></label></div>
                     <div class="relative h-16"><input type="radio" name="rgb" value="聚會與儀式" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">聚會與儀式</span></label></div>
@@ -380,26 +382,26 @@
     </main>
 
     <script>
-        // --- 登入與安全機制 ---
+        // --- 登入與防禦安全層 ---
         let CURRENT_USER = '';
+        const $ = (id) => document.getElementById(id);
 
         function checkUser() {
             const storedUser = localStorage.getItem('ifl_user');
             if (storedUser) {
                 CURRENT_USER = storedUser;
-                document.getElementById('currentUserDisplay').innerText = CURRENT_USER;
-                document.getElementById('loginOverlay').classList.add('hidden');
+                $('currentUserDisplay').innerText = CURRENT_USER;
+                $('loginOverlay').classList.add('hidden');
             } else {
-                document.getElementById('loginOverlay').classList.remove('hidden');
+                $('loginOverlay').classList.remove('hidden');
             }
         }
 
         function saveUser() {
-            const id = document.getElementById('loginId').value.trim().toUpperCase();
-            const pwd = document.getElementById('loginPwd').value.trim();
-            const err = document.getElementById('loginError');
+            const id = $('loginId').value.trim().toUpperCase();
+            const pwd = $('loginPwd').value.trim();
+            const err = $('loginError');
 
-            // 防注入：只允許英文數字
             if (!id || !pwd || !/^[A-Z0-9]+$/.test(id)) {
                 err.innerText = "請填寫正確的員工代號與密碼";
                 err.classList.remove('hidden');
@@ -431,8 +433,8 @@
 
         function startScanner() {
             if (isScanning) return;
-            document.getElementById('scannerOverlay').classList.remove('hidden');
-            document.getElementById('scannerOverlay').classList.add('flex');
+            $('scannerOverlay').classList.remove('hidden');
+            $('scannerOverlay').classList.add('flex');
             
             lastDetectedCode = '';
             lastDetectedAt = 0;
@@ -456,7 +458,6 @@
                     }
                 },
                 decoder: {
-                    // 徹底移除 EAN，專心找衣服長條碼
                     readers: ["code_128_reader", "code_39_reader"]
                 },
                 locate: true, 
@@ -473,16 +474,14 @@
                     const code = result?.codeResult?.code || '';
                     if (!code) return;
                     
-                    // 防重複掃描連發 (1.5秒內不重複處裡)
                     const now = Date.now();
                     if (code === lastDetectedCode && now - lastDetectedAt < 1500) return;
                     lastDetectedCode = code;
                     lastDetectedAt = now;
 
-                    // 長度過濾細碎雜訊
                     if (code.length > 5) {
                         stopScanner(); 
-                        document.getElementById('inputSKU').value = code; 
+                        $('inputSKU').value = code; 
                         handleScan(code);
                     }
                 };
@@ -502,9 +501,9 @@
                 try { Quagga.stop(); } catch(e){}
                 isScanning = false;
             }
-            document.getElementById('reader').innerHTML = '';
-            document.getElementById('scannerOverlay').classList.add('hidden');
-            document.getElementById('scannerOverlay').classList.remove('flex');
+            $('reader').innerHTML = '';
+            $('scannerOverlay').classList.add('hidden');
+            $('scannerOverlay').classList.remove('flex');
         }
 
         // --- 門市前端資料庫 (更新這區以擴充商品) ---
@@ -547,6 +546,12 @@
             PASS: ["漂亮是選擇，體面是底氣。", "精準推薦，信任直覺。", "了解客人，就能創造價值。"]
         };
 
+        const personas = {
+            'leader': './images/leader.jpg', 
+            'self':   './images/self.jpg',
+            'cp':     './images/cp.jpg'
+        };
+
         // --- 防呆滑桿邏輯 ---
         let isHeightAdjusted = false;
         let isWeightAdjusted = false;
@@ -558,8 +563,8 @@
         }
 
         function checkSliders() {
-            const btn = document.getElementById('btnConfirmChar');
-            const warning = document.getElementById('sliderWarning');
+            const btn = $('btnConfirmChar');
+            const warning = $('sliderWarning');
             if (isHeightAdjusted && isWeightAdjusted) {
                 btn.classList.remove('opacity-40', 'grayscale', 'cursor-not-allowed');
                 btn.classList.add('shadow-soft', 'btn-touch');
@@ -568,18 +573,27 @@
             }
         }
 
+        function syncHeightDisplay(val) {
+            $('hValDispGrid').innerText = val;
+        }
+
+        function syncWeightDisplay(val) {
+            $('wValDispGrid').innerText = val;
+        }
+
         // --- 啟動與列表生成 ---
         window.onload = function() {
             checkUser(); 
             renderList('failCats', FAIL_DB, 'fail');
             renderList('passCats', PASS_DB, 'pass');
-            document.getElementById("inputSKU").addEventListener("keyup", function(event) {
+            $('inputSKU').addEventListener("keyup", function(event) {
                 if (event.key === "Enter") handleScan(this.value);
             });
         };
 
         function renderList(targetId, data, type) {
-            const container = document.getElementById(targetId);
+            const container = $(targetId);
+            container.innerHTML = '';
             const style = type === 'fail' ? 'fail-check' : 'pass-check';
             Object.keys(data).forEach(cat => {
                 const items = data[cat].map((item, i) => `
@@ -603,40 +617,34 @@
         // --- 核心邏輯：暴力截斷防當機 ---
         function deriveSku(rawVal) {
             if (!rawVal) return '';
-            
-            // 處理橫線，如: 252-0426-51-F -> 取前兩段
+            let val = String(rawVal).toUpperCase().replace(/[\s-]/g, '');
             if (rawVal.includes('-')) {
                 const parts = rawVal.split('-');
                 if (parts.length >= 2) {
-                    return (parts[0] + parts[1]).toUpperCase(); // 2520426
+                    return (parts[0] + parts[1]).toUpperCase();
                 }
             }
-            
-            // 備用處理: 移除所有非英數字元
-            const cleaned = String(rawVal).toUpperCase().replace(/[^A-Z0-9]/g, '');
-            // 若為純數字且長度過長，強制取前7碼
-            if (cleaned.length > 7) {
-                return cleaned.substring(0, 7);
-            }
-            return cleaned;
+            if (val.length >= 7) return val.substring(0, 7);
+            return val;
         }
 
         function handleScan(rawVal) {
             if(!rawVal) return;
             
-            // 使用嚴格的截斷邏輯
             let sku = deriveSku(rawVal);
+            if (!sku) {
+                alert('請重新輸入或掃描');
+                return;
+            }
             
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.getElementById('loadingOverlay').classList.add('flex');
-            document.getElementById('loadingText').innerText = "讀取中...";
+            $('loadingOverlay').classList.remove('hidden');
+            $('loadingOverlay').classList.add('flex');
+            $('loadingText').innerText = "讀取中...";
             
             const data = productDB[sku] || productDB['DEFAULT'];
 
             setTimeout(() => {
-                const imgEl = document.getElementById('statsImg');
-                
-                // 圖片雙重掛載：先找大寫 JPG，失敗再找小寫 jpg，再失敗跳預設
+                const imgEl = $('statsImg');
                 imgEl.onerror = function() {
                     if (!this.dataset.retried) {
                         this.dataset.retried = 'true';
@@ -649,20 +657,41 @@
                 imgEl.dataset.retried = '';
                 imgEl.src = `./images/${sku}.JPG`; 
                 
-                document.getElementById('statsSKU').innerText = sku; 
-                document.getElementById('charSKU').innerText = sku;
+                ['statsSKU', 'charSKU', 'infoSKU'].forEach(id => {
+                    const el = $(id);
+                    if(el) el.innerText = sku;
+                });
                 
-                ['statsName', 'infoName'].forEach(id => document.getElementById(id).innerText = data.name || '未命名商品');
-                ['statsBrief', 'infoBrief'].forEach(id => document.getElementById(id).innerText = `"${data.brief || ''}"`);
-                ['statsRGB', 'infoRGB'].forEach(id => document.getElementById(id).innerText = data.rgb || '-');
-                ['statsSwitch', 'infoSwitch'].forEach(id => document.getElementById(id).innerText = data.switch || '-');
-                ['statsHitvox', 'infoHitvox'].forEach(id => document.getElementById(id).innerText = data.hitvox || '-');
-                document.getElementById('statsPain').innerText = data.atk || '-';
-                document.getElementById('statsAnxiety').innerText = data.def || '-';
-                document.getElementById('infoSKU').innerText = sku;
+                ['statsName', 'infoName'].forEach(id => {
+                    const el = $(id);
+                    if(el) el.innerText = data.name || '未命名商品';
+                });
+                
+                ['statsBrief', 'infoBrief'].forEach(id => {
+                    const el = $(id);
+                    if(el) el.innerText = `"${data.brief || ''}"`;
+                });
+                
+                ['statsRGB', 'infoRGB'].forEach(id => {
+                    const el = $(id);
+                    if(el) el.innerText = data.rgb || '-';
+                });
+                
+                ['statsSwitch', 'infoSwitch'].forEach(id => {
+                    const el = $(id);
+                    if(el) el.innerText = data.switch || '-';
+                });
+                
+                ['statsHitvox', 'infoHitvox'].forEach(id => {
+                    const el = $(id);
+                    if(el) el.innerText = data.hitvox || '-';
+                });
+                
+                if($('statsPain')) $('statsPain').innerText = data.atk || '-';
+                if($('statsAnxiety')) $('statsAnxiety').innerText = data.def || '-';
 
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                document.getElementById('loadingOverlay').classList.remove('flex');
+                $('loadingOverlay').classList.add('hidden');
+                $('loadingOverlay').classList.remove('flex');
                 switchScene('scene_scan', 'scene_stats');
             }, 300);
         }
@@ -670,15 +699,15 @@
         function goToCharSetup() { switchScene('scene_stats', 'scene_char'); }
         
         function updateVisuals(key) {
-            const img = document.getElementById('charImg');
+            const img = $('charImg');
             let filename = 'leader';
-            if(key === 'Self') filename = 'self';
-            if(key === 'CP') filename = 'cp';
+            if(key === '風格審美') filename = 'self';
+            if(key === '實用型選擇') filename = 'cp';
             
             img.src = `./images/${filename}.jpg`;
             img.classList.remove('opacity-50');
             img.classList.add('opacity-100');
-            document.getElementById('charPlaceholder').style.display = 'none';
+            $('charPlaceholder').style.display = 'none';
         }
         
         function confirmChar() {
@@ -696,15 +725,17 @@
         }
 
         function goToLog(type) {
-            document.getElementById('scene_verdict').classList.add('hidden-step');
-            if(type === 'FAIL') document.getElementById('scene_log_fail').classList.remove('hidden-step');
-            else document.getElementById('scene_log_pass').classList.remove('hidden-step');
+            $('scene_verdict').classList.add('hidden-step');
+            if(type === 'FAIL') $('scene_log_fail').classList.remove('hidden-step');
+            else $('scene_log_pass').classList.remove('hidden-step');
+            window.scrollTo(0,0);
         }
 
         function backToVerdict() {
-            document.getElementById('scene_log_fail').classList.add('hidden-step');
-            document.getElementById('scene_log_pass').classList.add('hidden-step');
-            document.getElementById('scene_verdict').classList.remove('hidden-step');
+            $('scene_log_fail').classList.add('hidden-step');
+            $('scene_log_pass').classList.add('hidden-step');
+            $('scene_verdict').classList.remove('hidden-step');
+            window.scrollTo(0,0);
         }
 
         function submitLog(type) {
@@ -712,19 +743,19 @@
             const checks = document.querySelectorAll(`#${container} input:checked`);
             if(checks.length === 0) { alert('請至少勾選一個原因'); return; }
 
-            const sku = document.getElementById('statsSKU').innerText; 
+            const sku = $('statsSKU').innerText; 
             const persona = document.querySelector('input[name="persona"]:checked')?.value || 'Unknown';
             const scene = document.querySelector('input[name="rgb"]:checked')?.value || 'Unknown';
-            const height = document.getElementById('hValDispGrid').innerText;
-            const weight = document.getElementById('wValDispGrid').innerText;
+            const height = $('hValDispGrid').innerText;
+            const weight = $('wValDispGrid').innerText;
             const reasons = Array.from(checks).map(c => c.value).join(', ');
-            const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
-            const productInfo = `[${document.getElementById('infoName').innerText}] RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
+            const note = type === 'FAIL' ? $('failNote').value : '';
+            const productInfo = `[${$('infoName').innerText}] RGB:${$('infoRGB').innerText} / SW:${$('infoSwitch').innerText}`;
             const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.JPG`;
 
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.getElementById('loadingOverlay').classList.add('flex');
-            document.getElementById('loadingText').innerText = "資料同步中...";
+            $('loadingOverlay').classList.remove('hidden');
+            $('loadingOverlay').classList.add('flex');
+            $('loadingText').innerText = "資料同步中...";
 
             const payload = {
                 user: CURRENT_USER,
@@ -759,8 +790,8 @@
                 })
                 .catch(err => {
                     alert("上傳失敗，請檢查網路連線或 API: " + err.message);
-                    document.getElementById('loadingOverlay').classList.add('hidden');
-                    document.getElementById('loadingOverlay').classList.remove('flex');
+                    $('loadingOverlay').classList.add('hidden');
+                    $('loadingOverlay').classList.remove('flex');
                 });
             } else {
                 setTimeout(() => showSuccessUI(type), 1000);
@@ -768,9 +799,9 @@
         }
 
         function showSuccessUI(type) {
-            const icon = document.getElementById('finalIcon');
-            const msg = document.getElementById('finalMsg');
-            const title = document.getElementById('finalTitle');
+            const icon = $('finalIcon');
+            const msg = $('finalMsg');
+            const title = $('finalTitle');
 
             if(type === 'FAIL') {
                 icon.className = "w-32 h-32 rounded-full border-8 border-rose-m text-rose-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
@@ -786,59 +817,60 @@
                 title.innerText = "已紀錄成交回饋";
             }
 
-            document.getElementById('scene_log_fail').classList.add('hidden-step');
-            document.getElementById('scene_log_pass').classList.add('hidden-step');
-            document.getElementById('scene_success').classList.remove('hidden-step');
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            document.getElementById('loadingOverlay').classList.remove('flex');
+            $('scene_log_fail').classList.add('hidden-step');
+            $('scene_log_pass').classList.add('hidden-step');
+            $('scene_success').classList.remove('hidden-step');
+            $('loadingOverlay').classList.add('hidden');
+            $('loadingOverlay').classList.remove('flex');
             
             setTimeout(() => icon.classList.remove('scale-0'), 100);
         }
 
         function switchScene(from, to) { 
-            document.getElementById(from).classList.add('hidden-step'); 
-            document.getElementById(to).classList.remove('hidden-step'); 
+            $(from).classList.add('hidden-step'); 
+            $(to).classList.remove('hidden-step'); 
             window.scrollTo(0,0);
         }
         
         function resetApp() {
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.getElementById('loadingOverlay').classList.add('flex');
-            document.getElementById('loadingText').innerText = "重置中...";
+            $('loadingOverlay').classList.remove('hidden');
+            $('loadingOverlay').classList.add('flex');
+            $('loadingText').innerText = "重置中...";
             
             setTimeout(() => {
                 const scenes = ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'];
-                scenes.forEach(id => document.getElementById(id).classList.add('hidden-step'));
+                scenes.forEach(id => $(id).classList.add('hidden-step'));
                 
-                document.getElementById('inputSKU').value = '';
+                $('inputSKU').value = '';
                 document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
-                document.getElementById('failNote').value = '';
+                $('failNote').value = '';
                 
                 // 真重置鎖定
                 isHeightAdjusted = false;
                 isWeightAdjusted = false;
-                const btn = document.getElementById('btnConfirmChar');
+                const btn = $('btnConfirmChar');
                 btn.classList.add('opacity-40', 'grayscale', 'cursor-not-allowed');
                 btn.classList.remove('shadow-soft', 'btn-touch');
                 btn.disabled = true;
                 
-                const warning = document.getElementById('sliderWarning');
+                const warning = $('sliderWarning');
                 if(warning) warning.classList.remove('opacity-0');
 
                 document.querySelectorAll('.h-slider').forEach(el => el.value = 50);
-                document.querySelectorAll('.h-slider[min="150"]').forEach(el => el.value = 160);
-                document.getElementById('wValDispGrid').innerText = '50';
-                document.getElementById('hValDispGrid').innerText = '160';
+                document.querySelectorAll('#heightSlider').forEach(el => el.value = 160);
+                $('wValDispGrid').innerText = '50';
+                $('hValDispGrid').innerText = '160';
                 
-                const img = document.getElementById('charImg');
+                const img = $('charImg');
                 img.src = '';
                 img.classList.remove('opacity-100');
                 img.classList.add('opacity-50');
-                document.getElementById('charPlaceholder').style.display = 'block';
+                $('charPlaceholder').style.display = 'block';
 
-                document.getElementById('scene_scan').classList.remove('hidden-step');
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                document.getElementById('loadingOverlay').classList.remove('flex');
+                $('scene_scan').classList.remove('hidden-step');
+                $('loadingOverlay').classList.add('hidden');
+                $('loadingOverlay').classList.remove('flex');
+                window.scrollTo(0,0);
             }, 400);
         }
 
@@ -849,7 +881,7 @@
                 recognition.interimResults = false;
                 recognition.lang = "zh-TW";
                 recognition.start();
-                recognition.onresult = function(e) { document.getElementById(targetId).value += e.results[0][0].transcript; recognition.stop(); };
+                recognition.onresult = function(e) { $(targetId).value += e.results[0][0].transcript; recognition.stop(); };
             } else { alert("瀏覽器不支援語音輸入"); }
         }
     </script>
