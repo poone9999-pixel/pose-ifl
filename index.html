@@ -116,7 +116,7 @@
             <div class="w-full space-y-6 mb-8">
                 <div>
                     <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">員工代號 (Account)</label>
-                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="XXX-X">
+                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="例如: NEAL">
                 </div>
                 <div>
                     <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">授權密碼 (Password)</label>
@@ -402,7 +402,10 @@
         // --- 登入與防禦安全層 ---
         function checkUser() {
             const storedUser = localStorage.getItem('ifl_user');
-            if (storedUser) {
+            const storedToken = localStorage.getItem('ifl_token'); // 新增檢查
+            
+            // 必須同時有 User ID 和 通行證 才能放行
+            if (storedUser && storedToken) {
                 CURRENT_USER = storedUser;
                 $('currentUserDisplay').innerText = CURRENT_USER;
                 $('loginOverlay').classList.add('hidden');
@@ -438,7 +441,9 @@
                 $('loadingOverlay').classList.remove('flex');
 
                 if (data.result === 'success') {
+                    // 登入成功時，同時儲存大腦發給我們的「數位通行證」
                     localStorage.setItem('ifl_user', id);
+                    localStorage.setItem('ifl_token', data.token || 'basic-token'); // ★ 核心駭入點
                     err.classList.add('hidden');
                     checkUser(); 
                 } else {
@@ -457,6 +462,7 @@
         function logout() {
             if(confirm("確定要登出並更換人員嗎？")) {
                 localStorage.removeItem('ifl_user');
+                localStorage.removeItem('ifl_token'); // 登出時銷毀通行證
                 location.reload();
             }
         }
@@ -623,11 +629,11 @@
                         </div>
                         <div class="col-span-4 bg-[#1C1C1E] border border-white/10 rounded p-1.5 flex flex-col justify-center gap-1">
                             <div class="flex items-start justify-between px-1 gap-1">
-                                <span class="text-[9px] text-rose-m font-bold mt-0.5 tracking-wider">焦慮</span>
+                                <span class="text-[9px] text-rose-m font-bold mt-0.5 tracking-wider">ATK</span>
                                 <span class="text-[10px] text-white font-bold leading-tight text-right flex-1 break-words">${data.atk}</span>
                             </div>
                             <div class="flex items-start justify-between px-1 gap-1">
-                                <span class="text-[9px] text-jade-m font-bold mt-0.5 tracking-wider">痛點</span>
+                                <span class="text-[9px] text-jade-m font-bold mt-0.5 tracking-wider">DEF</span>
                                 <span class="text-[10px] text-white font-bold leading-tight text-right flex-1 break-words">${data.def}</span>
                             </div>
                         </div>
@@ -812,14 +818,27 @@
             const productInfo = CURRENT_PRODUCT_INFO;
             const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.JPG`;
 
+            // ★ 從手機掏出數位通行證
+            const clientToken = localStorage.getItem('ifl_token') || '';
+
             $('loadingOverlay').classList.remove('hidden');
             $('loadingOverlay').classList.add('flex');
-            $('loadingText').innerText = "數據同步寫入中...";
+            $('loadingText').innerText = "數據加密傳輸中...";
 
             const payload = {
-                action: 'submitData', user: CURRENT_USER, sku: sku, result: type,
-                persona: persona, scene: scene, height: height, weight: weight,
-                reasons: reasons, note: note, productInfo: productInfo, imgLink: imgLink 
+                action: 'submitData', 
+                token: clientToken,  // ★ 攜帶數位通行證給後台驗證
+                user: CURRENT_USER, 
+                sku: sku, 
+                result: type,
+                persona: persona, 
+                scene: scene, 
+                height: height, 
+                weight: weight,
+                reasons: reasons, 
+                note: note, 
+                productInfo: productInfo, 
+                imgLink: imgLink 
             };
 
             fetch(GOOGLE_SCRIPT_URL, {
@@ -833,14 +852,23 @@
             })
             .then(data => {
                 if(data.result === 'success') {
-                    const stats = updateAndGetStats(type); // 觸發戰績寫入與讀取
+                    const stats = updateAndGetStats(type); 
                     showSuccessUI(type, stats);
                 } else {
-                    throw new Error(data.message || '資料庫寫入拒絕');
+                    // 如果後台說通行證失效，強迫登出
+                    if (data.message && data.message.includes('通行證')) {
+                        alert(data.message);
+                        logout();
+                        throw new Error('被後台拒絕：通行證無效');
+                    } else {
+                        throw new Error(data.message || '資料庫寫入拒絕');
+                    }
                 }
             })
             .catch(err => {
-                alert("上傳失敗，請檢查網路連線或 API: " + err.message);
+                if (err.message !== '被後台拒絕：通行證無效') {
+                    alert("上傳失敗，請檢查網路連線或 API: " + err.message);
+                }
                 $('loadingOverlay').classList.add('hidden');
                 $('loadingOverlay').classList.remove('flex');
             });
