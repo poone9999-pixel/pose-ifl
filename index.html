@@ -111,12 +111,12 @@
 
         <!-- === LOGIN OVERLAY === -->
         <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6 absolute w-full max-w-[450px] mx-auto left-0 right-0">
-            <h2 class="text-3xl font-black text-gold-m mb-2">PÓSE 系統登入</h2>
+            <h2 class="text-3xl font-black text-gold-m mb-2">by PÓSE 系統登入</h2>
             <p class="text-cream-dim mb-8 text-center text-sm">請輸入您的員工代號與密碼</p>
             <div class="w-full space-y-6 mb-8">
                 <div>
                     <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">員工代號 (Account)</label>
-                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="例如: NEAL">
+                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="XXX-X">
                 </div>
                 <div>
                     <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">授權密碼 (Password)</label>
@@ -185,7 +185,7 @@
                     <span class="text-[10px] text-white/30 uppercase tracking-widest">MANUAL INPUT</span>
                     <div class="h-px bg-white/10 flex-1"></div>
                 </div>
-                <input type="text" id="inputSKU" placeholder="例如: 2520511" class="w-full flat-input text-3xl py-2 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white" onkeyup="if(event.key==='Enter') handleScan(this.value)">
+                <input type="text" id="inputSKU" placeholder="例如: 2520201" class="w-full flat-input text-3xl py-2 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white" onkeyup="if(event.key==='Enter') handleScan(this.value)">
                 <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors tracking-widest">確認送出</button>
             </div>
         </div>
@@ -240,10 +240,10 @@
                 <!-- 雙子星滑桿 (橫向並排) -->
                 <div class="w-full bg-[#1C1C1E] border border-white/10 rounded p-3 shrink-0 shadow-inner relative">
                     <div id="sliderWarning" class="absolute inset-0 bg-rose-deep/10 pointer-events-none flex items-center justify-center transition-opacity duration-300 z-20 backdrop-blur-[1px] rounded">
-                        <span class="text-xs font-bold text-rose-m tracking-widest bg-black/90 px-3 py-1.5 rounded border border-rose-m/30"><i class="fas fa-exclamation-circle"></i> 必須拖拉解鎖送出</span>
+                        <span class="text-xs font-bold text-rose-m tracking-widest bg-black/90 px-3 py-1.5 rounded border border-rose-m/30"><i class="fas fa-exclamation-circle"></i> 必須輸入後解鎖</span>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-6 relative z-10 px-2">
+                    <div class="grid grid-cols-2 gap-6 relative z-8 px-2">
                         <div>
                             <div class="flex justify-between items-end mb-1">
                                 <span class="text-[11px] text-cream-dim font-bold tracking-widest">身高(cm)</span>
@@ -603,7 +603,7 @@
                     <div class="flex items-baseline gap-2 border-b border-white/10 pb-2 mb-1">
                         <span class="text-[10px] text-cream-dim font-bold tracking-widest uppercase">SKU</span>
                         <span class="text-4xl font-black text-white leading-none tracking-widest">${sku}</span>
-                        <span class="inline-block bg-gold-m text-cocoa-dark text-[9px] font-black px-1.5 py-0.5 rounded align-top mt-1">SSR</span>
+                        <span class="inline-block bg-gold-m text-cocoa-dark text-[9px] font-black px-1.5 py-0.5 rounded align-top mt-1">by PÓSE</span>
                     </div>
                     
                     <div class="border-l-[3px] border-gold-m pl-2.5 mt-1">
@@ -621,11 +621,11 @@
                         </div>
                         <div class="col-span-4 bg-[#1C1C1E] border border-white/10 rounded p-1.5 flex flex-col justify-center gap-1">
                             <div class="flex items-start justify-between px-1 gap-1">
-                                <span class="text-[9px] text-rose-m font-bold mt-0.5 tracking-wider">ATK</span>
+                                <span class="text-[9px] text-rose-m font-bold mt-0.5 tracking-wider">焦慮</span>
                                 <span class="text-[10px] text-white font-bold leading-tight text-right flex-1 break-words">${data.atk}</span>
                             </div>
                             <div class="flex items-start justify-between px-1 gap-1">
-                                <span class="text-[9px] text-jade-m font-bold mt-0.5 tracking-wider">DEF</span>
+                                <span class="text-[9px] text-jade-m font-bold mt-0.5 tracking-wider">痛點</span>
                                 <span class="text-[10px] text-white font-bold leading-tight text-right flex-1 break-words">${data.def}</span>
                             </div>
                         </div>
