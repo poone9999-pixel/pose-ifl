@@ -13,17 +13,13 @@
     <script>
         // ==========================================
         // ★★★ Google Apps Script 網址 ★★★
+        // 請確認這裡是「安全登入版」部署後產生「最新版本」的網址
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBi0qaM-8ZB-6YoV7tLnXiskkqPUcLZSXWVDZjxzl2xnNBEGUrHIGrcBjS1B3jFzDM/exec'; 
         // ==========================================
         const GITHUB_USER = 'poone9999-pixel';
         const REPO_NAME = 'pose-ifl';
 
-        // ★★★ 門市人員資料庫 (帳號 : 密碼) ★★★
-        const MEMBER_DB = {
-            'A11': '1234',
-            'A12': '5678',
-            'NEAL': '2501'
-        };
+        // (舊的 MEMBER_DB 已刪除，現在由雲端負責驗證)
 
         tailwind.config = {
             theme: {
@@ -392,30 +388,61 @@
                 CURRENT_USER = storedUser;
                 $('currentUserDisplay').innerText = CURRENT_USER;
                 $('loginOverlay').classList.add('hidden');
+                // 如果已經登入過，就立刻去抓商品資料庫
+                fetchSystemData();
             } else {
                 $('loginOverlay').classList.remove('hidden');
             }
         }
 
+        // ==========================================
+        // 任務 1：驗證登入 (改為向後台 POST 要求驗證)
+        // ==========================================
         function saveUser() {
             const id = $('loginId').value.trim().toUpperCase();
             const pwd = $('loginPwd').value.trim();
             const err = $('loginError');
 
-            if (!id || !pwd || !/^[A-Z0-9]+$/.test(id)) {
-                err.innerText = "請填寫正確的員工代號與密碼";
+            if (!id || !pwd) {
+                err.innerText = "請填寫完整的員工代號與密碼";
                 err.classList.remove('hidden');
                 return;
             }
 
-            if (MEMBER_DB[id] && MEMBER_DB[id] === pwd) {
-                localStorage.setItem('ifl_user', id);
-                err.classList.add('hidden');
-                checkUser();
-            } else {
-                err.innerText = "帳號或密碼錯誤，請重新輸入";
+            // 顯示載入中動畫
+            $('loadingOverlay').classList.remove('hidden');
+            $('loadingOverlay').classList.add('flex');
+            $('loadingText').innerText = "雲端驗證中...";
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    action: 'login', 
+                    account: id, 
+                    password: pwd 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                $('loadingOverlay').classList.add('hidden');
+                $('loadingOverlay').classList.remove('flex');
+
+                if (data.result === 'success') {
+                    localStorage.setItem('ifl_user', id);
+                    err.classList.add('hidden');
+                    checkUser(); 
+                } else {
+                    err.innerText = data.message || "帳號或密碼錯誤，請重新輸入";
+                    err.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                $('loadingOverlay').classList.add('hidden');
+                $('loadingOverlay').classList.remove('flex');
+                err.innerText = "網路異常或伺服器錯誤，請稍後再試";
                 err.classList.remove('hidden');
-            }
+            });
         }
 
         function logout() {
@@ -506,27 +533,63 @@
             $('scannerOverlay').classList.remove('flex');
         }
 
-        // --- 門市前端資料庫 (更新這區以擴充商品) ---
-        const productDB = {
+        // ==========================================
+        // 任務 2：獲取商品資料 (動態從雲端載入，取代寫死的程式碼)
+        // ==========================================
+        let productDB = {
             'DEFAULT': { 
                 name: 'POONE 經典商品 (未建檔)',
                 brief: '百搭實穿版型，修飾亞洲女性身形。',
                 rgb: '未設定', switch: '-', hitvox: '-',
                 atk: '修飾身形', def: '防撐不住'
-            },
-            '2520511': { 
-                name: 'POONE 細閃亮點V領簍空針織背心',
-                brief: '輕盈透氣簍空設計，細閃光澤提升質感。',
-                rgb: 'G+R', switch: 'W', hitvox: '柔',
-                atk: '顯鎖骨', def: '修肩頸'
-            },
-            '2520426': { 
-                name: 'POONE 經典修身西裝褲',
-                brief: '視覺少3公分神褲，針對亞洲梨形身材修正。',
-                rgb: 'R+B', switch: 'S', hitvox: '挺',
-                atk: '消假胯寬', def: '防撐不住'
             }
         };
+
+        function fetchSystemData() {
+            $('loadingOverlay').classList.remove('hidden');
+            $('loadingOverlay').classList.add('flex');
+            $('loadingText').innerText = "載入商品資料庫...";
+
+            // 使用 GET 方法呼叫 API
+            fetch(GOOGLE_SCRIPT_URL + '?action=getSystemData')
+            .then(res => res.json())
+            .then(data => {
+                $('loadingOverlay').classList.add('hidden');
+                $('loadingOverlay').classList.remove('flex');
+
+                if (data.result === 'success' && data.data) {
+                    // 假設你的 POSE_System_Data (檔案B) 的直行順序是：
+                    // [0]SKU, [1]名稱, [2]簡述, [3]RGB, [4]SW, [5]骨架, [6]ATK, [7]DEF
+                    const rows = data.data;
+                    
+                    // 從 i=1 開始，跳過第一列的標題
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        const sku = String(row[0]).trim().toUpperCase();
+                        
+                        if (sku) {
+                            productDB[sku] = {
+                                name: row[1] || '未命名商品',
+                                brief: row[2] || '',
+                                rgb: row[3] || '-',
+                                switch: row[4] || '-',
+                                hitvox: row[5] || '-',
+                                atk: row[6] || '-',
+                                def: row[7] || '-'
+                            };
+                        }
+                    }
+                    console.log("商品載入成功，共 " + (rows.length - 1) + " 筆");
+                }
+            })
+            .catch(err => {
+                console.error("載入商品失敗:", err);
+                $('loadingOverlay').classList.add('hidden');
+                $('loadingOverlay').classList.remove('flex');
+                alert("商品資料庫載入失敗，目前為離線模式");
+            });
+        }
+
 
         // --- 門市話術 ---
         const FAIL_DB = {
@@ -536,7 +599,7 @@
         };
         
         const PASS_DB = {
-            '六大成交原因': ['穿起來"氣場"對了', '舒服"自在"不勒不緊', '"實穿百搭"出場率高', '材質好友"質感"', '修飾身形不顯"老氣"', '犒賞自己，我很喜歡'],
+            '六大成交原因': ['穿起來"氣場"對了', '舒服"自在"不勒不緊', '"實穿百搭"出場率高', '材質好有"質感"', '修飾身形不顯"老氣"', '犒賞自己，我很喜歡'],
             '痛點解決': ['修飾"梨形"身材', '肩線平順/藏副乳', '完美藏小腹', '遮住蝴蝶袖', '視覺大長腿', '穿起來不顯壯'],
             '成交驅動': ['風格一眼就愛上', '櫃姐介紹很精準', '有場合要穿可對應', '活動打折助成交', '版型/材質超適合', '朋友/家人說好看']
         };
@@ -738,6 +801,9 @@
             window.scrollTo(0,0);
         }
 
+        // ==========================================
+        // 任務 3：送出回填問卷 (加入 action 參數)
+        // ==========================================
         function submitLog(type) {
             const container = type === 'FAIL' ? 'failCats' : 'passCats';
             const checks = document.querySelectorAll(`#${container} input:checked`);
@@ -757,7 +823,9 @@
             $('loadingOverlay').classList.add('flex');
             $('loadingText').innerText = "資料同步中...";
 
+            // 這裡加入了 "action": "submitData" 以對應後台新邏輯
             const payload = {
+                action: 'submitData',
                 user: CURRENT_USER,
                 sku: sku,
                 result: type,
