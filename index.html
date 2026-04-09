@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v4.2 | 掃描強化版</title>
+    <title>By PÓSE IFL v4.3 | 掃描與圖檔修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 換回 html5-qrcode，這是對手機原生相機支援度最高的模組 -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -17,6 +16,7 @@
         const GITHUB_USER = 'poone9999-pixel';
         const REPO_NAME = 'pose-ifl';
 
+        // ★ 員工資料庫
         const MEMBER_DB = {
             'A11': '1234',
             'A12': '5678',
@@ -97,7 +97,9 @@
         .sticky-header { position: sticky; top: 0; background: #1C1C1E; z-index: 30; padding-top: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 
+        /* Quagga */
         #reader video { width: 100%; height: 100%; object-fit: cover; }
+        #reader canvas { display: none; }
         .scan-laser { position: absolute; top: 30%; left: 10%; width: 80%; height: 2px; background: #FFD700; box-shadow: 0 0 10px #FFD700; animation: laser 2s infinite alternate; z-index: 20; }
         @keyframes laser { from { top: 30%; } to { top: 70%; } }
     </style>
@@ -106,7 +108,6 @@
 
     <main id="app-container" class="flex flex-col">
 
-        <!-- === LOGIN OVERLAY === -->
         <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6 absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <h2 class="text-3xl font-black text-gold-m mb-2">PÓSE 系統登入</h2>
             <p class="text-cream-dim mb-8 text-center text-sm">請輸入您的員工代號與密碼</p>
@@ -126,7 +127,6 @@
             <p id="loginError" class="text-rose-m text-sm mt-4 hidden font-bold">帳號或密碼錯誤，請重新輸入</p>
         </div>
 
-        <!-- CAMERA SCANNER OVERLAY -->
         <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
                 <span class="text-white font-bold">掃描條碼</span>
@@ -143,17 +143,14 @@
             </div>
             <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4 z-30">
                 <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準框線</p>
-                <p class="text-xs text-white/50">支援格式: Code 128 / Code 39</p>
             </div>
         </div>
 
-        <!-- LOADING -->
         <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden absolute w-full max-w-[450px] mx-auto left-0 right-0 z-[80]">
             <div class="w-16 h-16 border-8 border-white/20 border-t-gold-m rounded-full animate-spin mb-6"></div>
             <p id="loadingText" class="text-2xl font-bold text-gold-m">讀取中...</p>
         </div>
 
-        <!-- === SCENE 1: SCAN === -->
         <div id="scene_scan" class="step-container h-screen flex flex-col px-6 bg-cocoa-dark relative">
             <div class="absolute top-4 left-4 text-xs text-cream-dim z-10">
                 User: <span id="currentUserDisplay" class="text-gold-m font-bold">...</span>
@@ -188,7 +185,6 @@
             </div>
         </div>
 
-        <!-- === SCENE 2: EQUIPMENT CARD === -->
         <div id="scene_stats" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 text-center flex flex-col items-center justify-center pt-2">
                 <p class="text-gold-m font-bold text-sm w-full truncate mb-1" id="statsName">商品名稱載入中...</p>
@@ -219,7 +215,7 @@
             </div>
 
             <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
-                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90">
+                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
@@ -240,7 +236,6 @@
             </div>
         </div>
 
-        <!-- === SCENE 3: CHARACTER SETUP === -->
         <div id="scene_char" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark">
             <div class="sticky-header px-4 flex justify-between items-center shrink-0">
                 <span class="text-lg font-bold text-white">請點選客戶樣貌描述</span>
@@ -313,7 +308,6 @@
             </div>
         </div>
 
-        <!-- === SCENE 4: VERDICT === -->
         <div id="scene_verdict" class="step-container hidden-step min-h-screen flex flex-col p-4 bg-cocoa-dark">
             <h2 class="text-3xl font-black text-cream text-center mt-4 mb-6">結果紀錄</h2>
             <div class="flex-1 flex flex-col gap-4 justify-center pb-10">
@@ -328,7 +322,6 @@
             </div>
         </div>
 
-        <!-- === SCENE 5: LOG FAIL === -->
         <div id="scene_log_fail" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-rose-m bg-cocoa-dark z-30">
                 <span class="text-2xl font-black text-rose-m">不購買原因</span>
@@ -347,7 +340,6 @@
             <div class="sticky-footer px-4"><button onclick="submitLog('FAIL')" class="w-full py-5 bg-rose-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄</button></div>
         </div>
 
-        <!-- === SCENE 5: LOG PASS === -->
         <div id="scene_log_pass" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-jade-m bg-cocoa-dark z-30">
                 <span class="text-2xl font-black text-jade-m">成交回饋</span>
@@ -359,7 +351,6 @@
             <div class="sticky-footer px-4"><button onclick="submitLog('PASS')" class="w-full py-5 bg-jade-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄</button></div>
         </div>
 
-        <!-- === SCENE 6: SUCCESS === -->
         <div id="scene_success" class="step-container hidden-step min-h-screen flex flex-col items-center justify-center p-6 bg-cocoa-dark text-center">
             <div id="finalIcon" class="w-32 h-32 rounded-full flex items-center justify-center mb-8 text-7xl shadow-soft scale-0 transition-transform duration-500"></div>
             <h2 class="text-4xl font-black text-white mb-6" id="finalTitle">已儲存</h2>
@@ -373,7 +364,7 @@
     </main>
 
     <script>
-        // --- USER AUTH LOGIC (升級為密碼驗證) ---
+        // --- USER AUTH LOGIC ---
         let CURRENT_USER = '';
 
         function checkUser() {
@@ -398,7 +389,6 @@
                 return;
             }
 
-            // 驗證邏輯：比對模擬的 MEMBER_DB
             if (MEMBER_DB[id] && MEMBER_DB[id] === pwd) {
                 localStorage.setItem('ifl_user', id);
                 err.classList.add('hidden');
@@ -416,8 +406,7 @@
             }
         }
 
-        // --- SCANNER LOGIC (切換回強大的 Html5Qrcode，並進行極限鎖定) ---
-        let html5QrCode = null;
+        // --- QUAGGA SCANNER LOGIC (還原您上傳的設定) ---
         let isScanning = false;
 
         function startScanner() {
@@ -425,61 +414,62 @@
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('scannerOverlay').classList.add('flex');
             
-            if (typeof Html5Qrcode === 'undefined') {
-                alert("相機模組尚未加載，請檢查網路連線");
-                stopScanner();
-                return;
-            }
-
-            html5QrCode = new Html5Qrcode("reader");
-            
-            const config = { 
-                fps: 15, 
-                qrbox: { width: 300, height: 100 }, 
-                aspectRatio: 1.0,
-                // ★ 終極防護：只鎖定 Code 128 與 Code 39，徹底消滅超市 EAN 條碼造成的雜訊干擾
-                formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39
-                ] 
-            };
-            
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
-                onScanSuccess, 
-                onScanFailure
-            ).then(() => {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#reader'), // 指向容器
+                    constraints: {
+                        facingMode: "environment", // 使用後置鏡頭
+                        width: { min: 640, ideal: 1280, max: 1920 }, // 偏好高解析度
+                        height: { min: 480, ideal: 720, max: 1080 },
+                        aspectRatio: { min: 1, max: 2 }
+                    }
+                },
+                decoder: {
+                    // ★ 依照 TXT 檔的原本設定
+                    readers: ["code_128_reader", "ean_reader", "code_39_reader", "ean_8_reader"]
+                },
+                locate: true, // 開啟定位功能，幫助找到條碼位置
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("相機啟動失敗: " + err);
+                    stopScanner();
+                    return;
+                }
+                console.log("Initialization finished. Ready to start");
+                Quagga.start();
                 isScanning = true;
-            }).catch(err => {
-                console.error("Camera Error:", err);
-                alert("無法啟動相機。請確認已允許權限。");
-                stopScanner();
+            });
+
+            // 監聽掃描結果
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                console.log("Barcode detected and processed : [" + code + "]", result);
+                
+                // 簡單驗證：至少要有 5 碼才算有效
+                if (code && code.length > 5) {
+                    stopScanner();
+                    document.getElementById('inputSKU').value = code;
+                    handleScan(code);
+                }
             });
         }
 
         function stopScanner() {
-            if (html5QrCode && isScanning) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    html5QrCode = null;
-                    isScanning = false;
-                }).catch(err => console.log(err));
+            if (isScanning) {
+                Quagga.stop();
+                Quagga.offDetected(); // 清除監聽
+                isScanning = false;
             }
             document.getElementById('scannerOverlay').classList.add('hidden');
             document.getElementById('scannerOverlay').classList.remove('flex');
         }
-
-        function onScanSuccess(decodedText) {
-            // ★ 長度防線：排除所有小於 7 碼的異常解碼
-            if (decodedText && decodedText.length >= 7) {
-                stopScanner(); 
-                document.getElementById('inputSKU').value = decodedText; 
-                handleScan(decodedText);
-            }
-        }
-
-        function onScanFailure(error) {}
 
         // --- DATA ---
         const personas = {
@@ -495,7 +485,7 @@
                 rgb: 'R+B', switch: 'S', hitvox: '挺',
                 atk: '消假胯寬', def: '防撐不住'
             },
-            '2520201': { // 測試用商品
+            '2520201': { 
                 name: 'POONE 細閃亮點V領簍空針織背心',
                 brief: '輕盈透氣簍空設計，細閃光澤提升質感。',
                 rgb: 'G+R', switch: 'W', hitvox: '柔',
@@ -533,7 +523,6 @@
         function checkSliders() {
             const btn = document.getElementById('btnConfirmChar');
             const warning = document.getElementById('sliderWarning');
-            // 如果兩者都動過，解鎖按鈕
             if (isHeightAdjusted && isWeightAdjusted) {
                 btn.classList.remove('opacity-40', 'grayscale', 'cursor-not-allowed');
                 btn.classList.add('btn-touch', 'shadow-soft');
@@ -547,9 +536,6 @@
             checkUser(); 
             renderList('failCats', FAIL_DB, 'fail');
             renderList('passCats', PASS_DB, 'pass');
-            document.getElementById("inputSKU").addEventListener("keyup", function(event) {
-                if (event.key === "Enter") handleScan(this.value);
-            });
         };
 
         function renderList(targetId, data, type) {
@@ -579,8 +565,11 @@
             if(!val) return;
             val = val.toUpperCase().trim();
 
+            // 去除橫線
             val = val.replace(/-/g, '');
+            
             let sku = val;
+            // 只取前 7 碼
             if (val.length > 7) {
                 sku = val.substring(0, 7);
             }
@@ -589,47 +578,48 @@
             document.getElementById('loadingOverlay').classList.add('flex');
             document.getElementById('loadingText').innerText = "讀取中...";
             
+            // ★ 強制鎖死使用 .JPG
+            const imgSrc = `./images/${sku}.JPG`;
             const data = productDB[sku] || productDB['DEFAULT'];
 
             setTimeout(() => {
-                // ★ 雙重圖檔保險：先試 JPG，若失敗自動改試 jpg，若還是沒有才顯示預設無圖
-                const imgEl = document.getElementById('statsImg');
-                imgEl.src = `./images/${sku}.JPG`;
-                
-                imgEl.onerror = function() {
-                    if (!this.dataset.retried) {
-                        this.dataset.retried = 'true';
-                        this.src = `./images/${sku}.jpg`; // 失敗就換小寫再試一次
-                    } else {
-                        this.onerror = null; // 清除 onerror 避免無限迴圈
-                        this.src = 'https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';
-                    }
-                };
-                // 重置保險旗標
-                imgEl.dataset.retried = '';
-                
-                document.getElementById('statsSKU').innerText = sku; 
-                document.getElementById('charSKU').innerText = sku;
-                
-                // 更新第一頁資料
-                document.getElementById('statsName').innerText = data.name;
-                document.getElementById('statsBrief').innerText = `"${data.brief}"`;
-                document.getElementById('statsRGB').innerText = data.rgb;
-                document.getElementById('statsSwitch').innerText = data.switch;
-                document.getElementById('statsHitvox').innerText = data.hitvox;
-                document.getElementById('statsPain').innerText = data.atk;
-                document.getElementById('statsAnxiety').innerText = data.def;
+                try {
+                    const imgEl = document.getElementById('statsImg');
+                    imgEl.src = imgSrc;
+                    
+                    // 單純的圖片防護，避免當機
+                    imgEl.onerror = function() {
+                        this.onerror = null;
+                        this.src = 'https://placehold.co/600x600/1C1C1E/D4AF37?text=No+Image';
+                    };
+                    
+                    document.getElementById('statsSKU').innerText = sku; 
+                    document.getElementById('charSKU').innerText = sku;
+                    
+                    document.getElementById('statsName').innerText = data.name;
+                    document.getElementById('statsBrief').innerText = `"${data.brief}"`;
+                    document.getElementById('statsRGB').innerText = data.rgb;
+                    document.getElementById('statsSwitch').innerText = data.switch;
+                    document.getElementById('statsHitvox').innerText = data.hitvox;
+                    document.getElementById('statsPain').innerText = data.atk;
+                    document.getElementById('statsAnxiety').innerText = data.def;
 
-                // 更新第二頁頂部資料格
-                document.getElementById('infoName').innerText = data.name;
-                document.getElementById('infoSKU').innerText = sku;
-                document.getElementById('infoRGB').innerText = data.rgb;
-                document.getElementById('infoSwitch').innerText = data.switch;
-                document.getElementById('infoHitvox').innerText = data.hitvox;
-                document.getElementById('infoBrief').innerText = `"${data.brief}"`;
+                    document.getElementById('infoName').innerText = data.name;
+                    document.getElementById('infoSKU').innerText = sku;
+                    document.getElementById('infoRGB').innerText = data.rgb;
+                    document.getElementById('infoSwitch').innerText = data.switch;
+                    document.getElementById('infoHitvox').innerText = data.hitvox;
+                    document.getElementById('infoBrief').innerText = `"${data.brief}"`;
 
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                switchScene('scene_scan', 'scene_stats');
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    document.getElementById('loadingOverlay').classList.remove('flex');
+                    switchScene('scene_scan', 'scene_stats');
+                } catch (err) {
+                    console.error(err);
+                    alert("處理發生錯誤，請重試");
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    document.getElementById('loadingOverlay').classList.remove('flex');
+                }
             }, 500);
         }
         
@@ -637,7 +627,6 @@
         
         function updateVisuals(key) {
             const img = document.getElementById('charImg');
-            // 此處寫死對應的檔名
             let filename = 'leader';
             if(key==='Self') filename='self';
             if(key==='CP') filename='cp';
@@ -692,7 +681,6 @@
             const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
             const productInfo = `[${document.getElementById('infoName').innerText}] RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
             
-            // 提交資料的圖檔連結預設使用 .JPG
             const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.JPG`;
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -714,7 +702,6 @@
             };
 
             if (GOOGLE_SCRIPT_URL) {
-                // 破除假成功，強迫讀取回傳值
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -734,6 +721,7 @@
                 .catch(err => {
                     alert("上傳失敗，請檢查網路連線或 API: " + err.message);
                     document.getElementById('loadingOverlay').classList.add('hidden');
+                    document.getElementById('loadingOverlay').classList.remove('flex');
                 });
             } else {
                 setTimeout(() => showSuccessUI(type), 1000);
@@ -763,6 +751,7 @@
             document.getElementById('scene_log_pass').classList.add('hidden-step');
             document.getElementById('scene_success').classList.remove('hidden-step');
             document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('loadingOverlay').classList.remove('flex');
             
             setTimeout(() => icon.classList.remove('scale-0'), 100);
         }
@@ -782,12 +771,10 @@
                 const scenes = ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'];
                 scenes.forEach(id => document.getElementById(id).classList.add('hidden-step'));
                 
-                // 表單清空
                 document.getElementById('inputSKU').value = '';
                 document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
                 document.getElementById('failNote').value = '';
                 
-                // ★ 真重置：鎖住按鈕與拉桿數值
                 isHeightAdjusted = false;
                 isWeightAdjusted = false;
                 const btn = document.getElementById('btnConfirmChar');
@@ -811,6 +798,7 @@
 
                 document.getElementById('scene_scan').classList.remove('hidden-step');
                 document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
             }, 400);
         }
 
