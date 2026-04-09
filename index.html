@@ -3,22 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>By PÓSE IFL v4.1 | Quagga 穩定修正版</title>
+    <title>By PÓSE IFL v5.0 | 門市實戰版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ★★★ 更換核心：改用 Quagga2 (專攻條碼) ★★★ -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- Quagga2 掃描核心 -->
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     
     <script>
         // ==========================================
-        // ★★★ 已填入您的 Google Apps Script 網址 ★★★
+        // ★★★ Google Apps Script 網址 ★★★
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBi0qaM-8ZB-6YoV7tLnXiskkqPUcLZSXWVDZjxzl2xnNBEGUrHIGrcBjS1B3jFzDM/exec'; 
         // ==========================================
-
-        // ★★★ 請填入您的 GitHub 帳號名稱 (用於產生圖片連結) ★★★
         const GITHUB_USER = 'poone9999-pixel';
         const REPO_NAME = 'pose-ifl';
+
+        // ★★★ 門市人員資料庫 (帳號 : 密碼) ★★★
+        const MEMBER_DB = {
+            'A11': '1234',
+            'A12': '5678',
+            'NEAL': '2501'
+        };
 
         tailwind.config = {
             theme: {
@@ -29,8 +35,6 @@
                         'cream': '#FFFFFF',
                         'cream-dim': '#D1D1D6',
                         'gold-m': '#FFD700',
-                        'jade-frame': '#00A86B',      
-                        'blue-slider': '#60A5FA',     
                         'rose-m': '#FF8FA3', 
                         'rose-deep': '#E11D48',
                         'jade-m': '#66D2AA', 
@@ -45,7 +49,6 @@
     </script>
     
     <style>
-        /* 背景全黑 */
         body { 
             -webkit-tap-highlight-color: transparent; 
             touch-action: manipulation; 
@@ -58,7 +61,6 @@
             justify-content: center;
         }
         
-        /* 限制最大寬度 */
         #app-container {
             width: 100%;
             max-width: 450px; 
@@ -70,9 +72,8 @@
 
         .btn-touch:active { transform: scale(0.96); }
         .hidden-step { display: none !important; }
-        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; }
         
-        /* 滑桿圓鈕修正 */
+        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; width: 100%; }
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
             background: #FFFFFF; 
@@ -82,109 +83,81 @@
             height: 32px; width: 32px; 
             margin-top: -12px; 
         }
-        input[type=range][orient=vertical]::-webkit-slider-thumb { 
-            margin-top: 0; 
-            margin-left: -12px; 
-        }
+        .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; }
         
-        .h-slider::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
-        input[type=range][orient=vertical] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 100%; height: 100%; }
-        input[type=range][orient=vertical]::-webkit-slider-runnable-track { width: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; backdrop-filter: blur(2px); }
-        
-        .btn-persona { background: #423F30; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
+        .btn-persona, .btn-scene { background: #423F30; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
         .chk-persona:checked + .btn-persona { background-color: #FFD700; color: #1C1C1E; border-color: #FFD700; font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
-        .btn-scene { background: #2C3E50; border: 1px solid #555; transition: all 0.2s; color: #CCC; }
         .chk-scene:checked + .btn-scene { background-color: #81BECE; color: #1C1C1E; border-color: #81BECE; font-weight: 900; box-shadow: 0 0 10px rgba(129, 190, 206, 0.4); }
+        
         .fail-check:checked + label { background-color: #FF8FA3; color: #000; font-weight: 900; border-color: #FF8FA3; }
         .pass-check:checked + label { background-color: #66D2AA; color: #000; font-weight: 900; border-color: #66D2AA; }
+        
         .flat-input { background: transparent; border: none; border-bottom: 3px solid #48484A; color: #FFD700; font-weight: 900; text-align: center; border-radius: 0; }
         .flat-input:focus { outline: none; border-bottom-color: #FFD700; }
         .sticky-footer { position: sticky; bottom: 0; background: #1C1C1E; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); z-index: 50; }
         .sticky-header { position: sticky; top: 0; background: #1C1C1E; z-index: 30; padding-top: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .value-box { background-color: #000; border: 2px solid #555; position: relative; }
-        .vertical-text { writing-mode: vertical-lr; text-orientation: upright; letter-spacing: 0.5rem; }
         .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 
-        /* Quagga Scanner Styles */
-        #reader video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #reader canvas {
-            display: none; /* 隱藏 Quagga 的 canvas，只顯示 video */
-        }
-        /* 掃描線動畫 */
-        .scan-laser {
-            position: absolute;
-            top: 30%;
-            left: 10%;
-            width: 80%;
-            height: 2px;
-            background: #FFD700;
-            box-shadow: 0 0 10px #FFD700;
-            animation: laser 2s infinite alternate;
-            z-index: 20;
-        }
-        @keyframes laser {
-            from { top: 30%; }
-            to { top: 70%; }
-        }
+        #reader video { width: 100%; height: 100%; object-fit: cover; }
+        #reader canvas { display: none; }
+        .scan-laser { position: absolute; top: 30%; left: 10%; width: 80%; height: 2px; background: #FFD700; box-shadow: 0 0 10px #FFD700; animation: laser 2s infinite alternate; z-index: 20; }
+        @keyframes laser { from { top: 30%; } to { top: 70%; } }
     </style>
 </head>
 <body>
 
     <main id="app-container" class="flex flex-col">
 
-        <!-- LOGIN OVERLAY -->
+        <!-- === LOGIN OVERLAY (帳密驗證) === -->
         <div id="loginOverlay" class="fixed inset-0 bg-cocoa-dark z-[60] flex flex-col items-center justify-center p-6 absolute w-full max-w-[450px] mx-auto left-0 right-0">
-            <h2 class="text-3xl font-black text-gold-m mb-6">人員識別</h2>
-            <p class="text-cream-dim mb-4 text-center">請輸入您的 櫃點/姓名<br>(只需輸入一次)</p>
-            <input type="text" id="loginName" class="w-full flat-input text-3xl py-2 mb-8" placeholder="例如: A11-Annie">
-            <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl">確認進入</button>
+            <h2 class="text-3xl font-black text-gold-m mb-2">PÓSE 系統登入</h2>
+            <p class="text-cream-dim mb-8 text-center text-sm">請輸入您的員工代號與密碼</p>
+            <div class="w-full space-y-6 mb-8">
+                <div>
+                    <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">員工代號 (Account)</label>
+                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="例如: NEAL">
+                </div>
+                <div>
+                    <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">授權密碼 (Password)</label>
+                    <input type="password" id="loginPwd" class="w-full flat-input text-2xl py-2" placeholder="••••">
+                </div>
+            </div>
+            <button onclick="saveUser()" class="w-full py-4 bg-gold-m text-cocoa-dark font-black text-xl rounded-xl shadow-soft btn-touch">驗證登入</button>
+            <p id="loginError" class="text-rose-m text-sm mt-4 hidden font-bold">帳號或密碼錯誤，請重新輸入</p>
         </div>
 
-        <!-- CAMERA SCANNER OVERLAY (Quagga) -->
+        <!-- CAMERA SCANNER OVERLAY -->
         <div id="scannerOverlay" class="fixed inset-0 bg-black z-[70] hidden flex-col absolute w-full max-w-[450px] mx-auto left-0 right-0">
             <div class="p-4 flex justify-between items-center bg-black/50 absolute top-0 w-full z-10">
                 <span class="text-white font-bold">掃描條碼</span>
                 <button onclick="stopScanner()" class="text-white text-2xl px-4 py-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            
-            <!-- 掃描區域 -->
             <div class="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
                 <div id="reader" class="w-full h-full absolute inset-0"></div>
-                <!-- 掃描框視覺 -->
                 <div class="absolute w-[80%] h-[30%] border-2 border-gold-m/70 rounded-lg z-20 pointer-events-none flex flex-col justify-between">
-                    <div class="w-full h-1 bg-gold-m/30"></div>
-                    <div class="w-full h-1 bg-gold-m/30"></div>
+                    <div class="w-full h-1 bg-gold-m/30"></div><div class="w-full h-1 bg-gold-m/30"></div>
                 </div>
                 <div class="scan-laser"></div>
             </div>
-
-            <!-- 掃描提示 -->
             <div class="absolute bottom-20 w-full text-center text-white/70 text-sm px-4 z-30">
                 <p class="text-gold-m font-bold text-lg mb-2">請將條碼橫向對準框線</p>
-                <p class="text-xs text-white/50">已切換至高解析度模式</p>
+                <p class="text-xs text-white/50">鎖定 Code 128 / Code 39 格式</p>
             </div>
         </div>
 
         <!-- LOADING -->
-        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden absolute w-full max-w-[450px] mx-auto left-0 right-0">
+        <div id="loadingOverlay" class="fixed inset-0 bg-cocoa-dark/98 z-50 flex flex-col items-center justify-center hidden absolute w-full max-w-[450px] mx-auto left-0 right-0 z-[80]">
             <div class="w-16 h-16 border-8 border-white/20 border-t-gold-m rounded-full animate-spin mb-6"></div>
             <p id="loadingText" class="text-2xl font-bold text-gold-m">讀取中...</p>
         </div>
 
         <!-- === SCENE 1: SCAN === -->
         <div id="scene_scan" class="step-container h-screen flex flex-col px-6 bg-cocoa-dark relative">
-            
             <div class="absolute top-4 left-4 text-xs text-cream-dim z-10">
                 User: <span id="currentUserDisplay" class="text-gold-m font-bold">...</span>
-                <button onclick="logout()" class="ml-2 text-white/30 underline">更換</button>
+                <button onclick="logout()" class="ml-2 text-white/30 underline">登出</button>
             </div>
 
             <div class="mt-16 mb-6 text-center shrink-0">
@@ -210,27 +183,22 @@
                     <span class="text-xs text-white/30 uppercase tracking-widest">或 手動輸入</span>
                     <div class="h-px bg-white/10 flex-1"></div>
                 </div>
-                
-                <input type="text" id="inputSKU" placeholder="例如: 2520201" 
-                       class="w-full flat-input text-3xl py-3 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white"
-                       onkeyup="if(event.key==='Enter') handleScan(this.value)">
-                
-                <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors">
-                    確認送出 (GO)
-                </button>
+                <input type="text" id="inputSKU" placeholder="例如: 2520511" class="w-full flat-input text-3xl py-3 uppercase placeholder:text-xl border-b-2 border-white/20 focus:border-gold-m bg-transparent text-center text-white" onkeyup="if(event.key==='Enter') handleScan(this.value)">
+                <button onclick="handleScan(document.getElementById('inputSKU').value)" class="w-full py-4 bg-white/10 text-white rounded-xl font-bold text-lg active:bg-white/20 border border-white/10 mt-2 hover:bg-gold-m hover:text-cocoa-dark transition-colors">確認送出 (GO)</button>
             </div>
-
         </div>
 
         <!-- === SCENE 2: EQUIPMENT CARD === -->
         <div id="scene_stats" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
-            <div class="sticky-header px-4 text-center flex items-center justify-center gap-3">
-                <h1 class="text-4xl font-black text-white tracking-tighter leading-none" id="statsSKU">...</h1>
-                <span class="inline-block bg-gold-m text-cocoa-dark text-xs font-black px-1.5 py-0.5 rounded">SSR</span>
-                <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors absolute right-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
+            <div class="sticky-header px-4 text-center flex flex-col items-center justify-center pt-2">
+                <!-- 商品名獨立一排 -->
+                <p class="text-gold-m font-bold text-sm w-full truncate mb-1" id="statsName">商品名稱載入中...</p>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-4xl font-black text-white tracking-tighter leading-none" id="statsSKU">...</h1>
+                    <span class="inline-block bg-gold-m text-cocoa-dark text-xs font-black px-1.5 py-0.5 rounded">SSR</span>
+                </div>
+                <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors absolute right-4 top-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                 </button>
             </div>
 
@@ -245,21 +213,14 @@
                         <div class="text-2xl font-black text-white" id="statsHitvox">-</div>
                     </div>
                     <div class="bg-cocoa-card rounded-lg p-1 flex flex-col justify-center border border-white/10 gap-0.5">
-                        <div class="flex justify-between items-center px-1">
-                            <span class="text-[10px] text-rose-m font-bold">ATK</span>
-                            <span class="text-xs text-white font-bold" id="statsPain">-</span>
-                        </div>
-                        <div class="flex justify-between items-center px-1">
-                            <span class="text-[10px] text-jade-m font-bold">DEF</span>
-                            <span class="text-xs text-white font-bold" id="statsAnxiety">-</span>
-                        </div>
+                        <div class="flex justify-between items-center px-1"><span class="text-[10px] text-rose-m font-bold">ATK</span><span class="text-xs text-white font-bold" id="statsPain">-</span></div>
+                        <div class="flex justify-between items-center px-1"><span class="text-[10px] text-jade-m font-bold">DEF</span><span class="text-xs text-white font-bold" id="statsAnxiety">-</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="w-full aspect-square shrink-0 relative bg-black border-y border-white/10 mb-2 overflow-hidden">
-                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90" 
-                     onerror="this.onerror=null; this.src='https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';">
+                <img id="statsImg" src="" class="w-full h-full object-cover opacity-90">
                 
                 <div class="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                     <div class="border-l-8 border-gold-m pl-3 pr-2 py-1 max-w-[85%]">
@@ -274,78 +235,88 @@
 
             <div class="sticky-footer flex gap-3">
                 <button onclick="goToCharSetup()" class="w-full py-5 bg-gold-m text-cocoa-dark text-2xl font-black rounded-xl shadow-soft btn-touch flex items-center justify-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                    <span>為客著裝</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                    <span>客戶描述+試穿成交結果</span>
                 </button>
             </div>
         </div>
 
-        <!-- === SCENE 3: CHARACTER SETUP === -->
+        <!-- === SCENE 3: CHARACTER SETUP (強制防呆與新佈局) === -->
         <div id="scene_char" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark">
             <div class="sticky-header px-4 flex justify-between items-center shrink-0">
-                <span class="text-lg font-bold text-white">客戶設定</span>
+                <span class="text-lg font-bold text-white">請點選客戶樣貌描述</span>
                 <div class="flex items-center gap-3">
-                    <span class="text-3xl font-black text-gold-m" id="charSKU">...</span>
                     <button onclick="resetApp()" class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cream hover:bg-white/20 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="p-2 bg-cocoa-dark">
-                <div class="grid grid-cols-4 gap-1 mb-1">
-                    <div class="col-span-3 grid grid-cols-3 gap-1 h-14">
-                        <div class="relative h-full"><input type="radio" name="persona" value="Leader" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">LEADER</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="persona" value="Self" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">SELF</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="persona" value="CP" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('CP')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">CP</span></label></div>
-                    </div>
-                    <div class="col-span-1 h-14 value-box rounded flex flex-col items-center justify-center"><span class="text-[10px] text-blue-slider font-bold">身高 cm</span><span class="text-2xl font-black text-white leading-none"><span id="hValDispGrid">160</span></span></div>
-
-                    <div class="col-span-3 grid grid-cols-3 gap-1 h-14">
-                        <div class="relative h-full"><input type="radio" name="rgb" value="Root" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">ROOT</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="rgb" value="Glow" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">GLOW</span></label></div>
-                        <div class="relative h-full"><input type="radio" name="rgb" value="Breathe" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer"><span class="text-sm font-black">BREATHE</span></label></div>
-                    </div>
-                    <div class="col-span-1 h-14 value-box rounded flex flex-col items-center justify-center"><span class="text-[10px] text-blue-slider font-bold">體重 kg</span><span class="text-2xl font-black text-white leading-none"><span id="wValDispGrid">50</span></span></div>
-                </div>
-
-                <div class="grid grid-cols-4 gap-1 h-auto items-stretch">
-                    <div class="col-span-3 aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft">
-                        <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-xs font-bold bg-black/50 px-3 py-1 rounded">請選擇上方風格</span></div>
-                        
-                        <div class="absolute bottom-0 left-0 right-10 h-20 bg-gradient-to-t from-black/90 to-transparent flex flex-col justify-end px-4 pb-5 z-10">
-                            <div class="flex justify-between w-full text-[10px] text-white/70 font-bold px-1 mb-1"><span>40kg</span><span>80kg</span></div>
-                            <input id="weightSlider" type="range" class="h-slider w-full" min="40" max="80" value="50" oninput="syncWeightDisplay(this.value)">
-                        </div>
-                        
-                        <div class="absolute top-0 bottom-0 right-0 w-14 bg-gradient-to-l from-black/90 to-transparent flex flex-col items-center justify-between py-4 z-10">
-                            <span class="text-[10px] text-white/70 font-bold">180</span>
-                            <div class="h-full py-2"><input id="heightSlider" type="range" orient="vertical" min="150" max="180" value="160" oninput="syncHeightDisplay(this.value)"></div>
-                            <span class="text-[10px] text-white/70 font-bold">150</span>
-                        </div>
-                    </div>
-
-                    <div class="col-span-1 h-full">
-                        <button onclick="confirmChar()" class="w-full h-full bg-cream text-cocoa-dark rounded-lg shadow-soft btn-touch flex flex-col items-center justify-center border-2 border-white/20 hover:bg-white transition-colors">
-                            <span class="vertical-text text-xl font-black">試穿銷售結果</span>
-                            <i class="fas fa-arrow-down mt-2 text-gold-m animate-bounce"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="mt-2 w-full bg-cocoa-card border border-white/20 rounded-lg p-3">
-                    <div class="flex justify-between items-center mb-2 border-b border-white/5 pb-2">
+            <div class="p-3 bg-cocoa-dark flex-1 flex flex-col gap-3">
+                
+                <!-- 1. 商品全名與資訊 (置頂) -->
+                <div class="w-full bg-cocoa-card border border-white/20 rounded-lg p-3 shrink-0">
+                    <p class="text-gold-m font-bold text-sm w-full truncate mb-2 border-b border-white/10 pb-2" id="infoName">商品名稱</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-cream-dim">SKU <span class="text-white font-bold text-lg ml-1" id="infoSKU">...</span></span>
                         <span class="text-xs text-cream-dim">RGB <span class="text-gold-m font-bold text-lg ml-1" id="infoRGB">-</span></span>
-                        <span class="text-xs text-cream-dim">SWITCH <span class="text-gold-m font-bold text-lg ml-1" id="infoSwitch">-</span></span>
+                        <span class="text-xs text-cream-dim">SW <span class="text-gold-m font-bold text-lg ml-1" id="infoSwitch">-</span></span>
                         <span class="text-xs text-cream-dim">骨架 <span class="text-white font-bold text-lg ml-1" id="infoHitvox">-</span></span>
                     </div>
                     <div class="border-l-4 border-gold-m pl-2">
-                        <p class="text-lg font-bold text-white leading-snug" id="infoBrief">...</p>
+                        <p class="text-sm font-bold text-white leading-snug" id="infoBrief">...</p>
                     </div>
                 </div>
+
+                <!-- 2. 身高體重滑桿 (雙橫式，強制防呆區) -->
+                <div class="w-full bg-cocoa-card border border-white/10 rounded-lg p-4 shrink-0 shadow-soft relative overflow-hidden">
+                    <div id="sliderWarning" class="absolute inset-0 bg-rose-deep/10 pointer-events-none flex justify-center pt-2 transition-opacity duration-300">
+                        <span class="text-xs font-bold text-rose-m tracking-widest"><i class="fas fa-exclamation-circle"></i> 必須拖拉調整數值才能解鎖送出</span>
+                    </div>
+
+                    <div class="mb-5 relative z-10 pt-4">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm text-cream-dim font-bold">身高 (Height)</span>
+                            <span class="text-3xl font-black text-white"><span id="hValDispGrid">160</span><span class="text-sm text-cream-dim ml-1">cm</span></span>
+                        </div>
+                        <input type="range" class="h-slider" min="150" max="180" value="160" oninput="markSliderAdjusted('height'); document.getElementById('hValDispGrid').innerText=this.value">
+                        <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>150</span><span>180</span></div>
+                    </div>
+
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm text-cream-dim font-bold">體重 (Weight)</span>
+                            <span class="text-3xl font-black text-white"><span id="wValDispGrid">50</span><span class="text-sm text-cream-dim ml-1">kg</span></span>
+                        </div>
+                        <input type="range" class="h-slider" min="40" max="80" value="50" oninput="markSliderAdjusted('weight'); document.getElementById('wValDispGrid').innerText=this.value">
+                        <div class="flex justify-between text-[10px] text-white/50 mt-1"><span>40</span><span>80</span></div>
+                    </div>
+                </div>
+
+                <!-- 3. 風格與場景網格 (門市黑話) -->
+                <div class="grid grid-cols-3 gap-2 shrink-0">
+                    <div class="relative h-16"><input type="radio" name="persona" value="責任型決策" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('Leader')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">責任型決策</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="風格審美" id="p_self" class="chk-persona hidden" onchange="updateVisuals('Self')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">風格審美</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="persona" value="實用型選擇" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('CP')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">實用型選擇</span></label></div>
+                    
+                    <div class="relative h-16"><input type="radio" name="rgb" value="職場與正式" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">職場與正式</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="rgb" value="聚會與儀式" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">聚會與儀式</span></label></div>
+                    <div class="relative h-16"><input type="radio" name="rgb" value="日常與休閒" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1"><span class="text-sm font-black leading-tight">日常與休閒</span></label></div>
+                </div>
+
+                <!-- 4. 圖片顯示區 -->
+                <div class="w-full aspect-square relative bg-black border border-white/10 rounded-lg overflow-hidden shadow-soft mb-20">
+                    <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span id="charPlaceholder" class="text-cream-dim text-sm font-bold bg-black/50 px-4 py-2 rounded">點選上方按鈕顯示風格</span></div>
+                </div>
+
+            </div>
+
+            <!-- 5. 底部鎖定按鈕 -->
+            <div class="sticky-footer">
+                <button id="btnConfirmChar" onclick="confirmChar()" class="w-full py-5 bg-cream text-cocoa-dark font-black text-2xl rounded-xl transition-all duration-300 opacity-40 grayscale cursor-not-allowed" disabled>
+                    試穿成交回饋
+                </button>
             </div>
         </div>
 
@@ -355,13 +326,11 @@
             <div class="flex-1 flex flex-col gap-4 justify-center pb-10">
                 <button onclick="goToLog('PASS')" class="flex-1 bg-jade-deep border-4 border-jade-m rounded-2xl flex flex-col items-center justify-center gap-2 btn-touch shadow-soft">
                     <i class="fas fa-check text-6xl text-white mb-2"></i>
-                    <span class="text-4xl font-black text-white tracking-widest">成 交</span>
-                    <span class="text-sm font-bold text-white/70 opacity-80 uppercase tracking-widest">DEAL / PASS</span>
+                    <span class="text-4xl font-black text-white tracking-widest">成交回饋</span>
                 </button>
                 <button onclick="goToLog('FAIL')" class="flex-1 bg-rose-deep border-4 border-rose-m rounded-2xl flex flex-col items-center justify-center gap-2 btn-touch shadow-soft">
                     <i class="fas fa-times text-6xl text-white mb-2"></i>
-                    <span class="text-4xl font-black text-white tracking-widest">排除錯誤</span>
-                    <span class="text-sm font-bold text-white/70 opacity-80 uppercase tracking-widest">FAIL DIAGNOSIS</span>
+                    <span class="text-4xl font-black text-white tracking-widest">不購買原因</span>
                 </button>
             </div>
         </div>
@@ -369,7 +338,7 @@
         <!-- === SCENE 5: LOG FAIL === -->
         <div id="scene_log_fail" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-rose-m bg-cocoa-dark z-30">
-                <span class="text-2xl font-black text-rose-m">FAIL 原因</span>
+                <span class="text-2xl font-black text-rose-m">不購買原因</span>
                 <button onclick="backToVerdict()" class="px-4 py-2 bg-white/10 rounded-lg text-white font-bold text-lg">返回</button>
             </div>
             <div class="flex-1 overflow-y-auto p-4">
@@ -382,19 +351,19 @@
                     </div>
                 </div>
             </div>
-            <div class="sticky-footer px-4"><button onclick="submitLog('FAIL')" class="w-full py-5 bg-rose-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄 (FAIL)</button></div>
+            <div class="sticky-footer px-4"><button onclick="submitLog('FAIL')" class="w-full py-5 bg-rose-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄</button></div>
         </div>
 
         <!-- === SCENE 5: LOG PASS === -->
         <div id="scene_log_pass" class="step-container hidden-step min-h-screen flex flex-col bg-cocoa-dark pb-24">
             <div class="sticky-header px-4 flex items-center justify-between shrink-0 border-b-2 border-jade-m bg-cocoa-dark z-30">
-                <span class="text-2xl font-black text-jade-m">PASS 原因</span>
+                <span class="text-2xl font-black text-jade-m">成交回饋</span>
                 <button onclick="backToVerdict()" class="px-4 py-2 bg-white/10 rounded-lg text-white font-bold text-lg">返回</button>
             </div>
             <div class="flex-1 overflow-y-auto p-4">
                 <div id="passCats"></div>
             </div>
-            <div class="sticky-footer px-4"><button onclick="submitLog('PASS')" class="w-full py-5 bg-jade-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄 (PASS)</button></div>
+            <div class="sticky-footer px-4"><button onclick="submitLog('PASS')" class="w-full py-5 bg-jade-m text-cocoa-dark font-black text-2xl rounded-xl shadow-soft btn-touch">送出紀錄</button></div>
         </div>
 
         <!-- === SCENE 6: SUCCESS === -->
@@ -411,209 +380,111 @@
     </main>
 
     <script>
-        // --- CONFIG ---
-        // Apps Script 需回傳 JSON，例如：
-        // return ContentService.createTextOutput(JSON.stringify({ ok: true, message: 'saved' }))
-        //   .setMimeType(ContentService.MimeType.JSON);
-        // 並確認 Web App 已部署為可被外部存取，前端才會把「成功」視為真的成功。
-        const DEFAULT_HEIGHT = 160;
-        const DEFAULT_WEIGHT = 50;
-        const HEIGHT_MIN = 150;
-        const HEIGHT_MAX = 180;
-        const WEIGHT_MIN = 40;
-        const WEIGHT_MAX = 80;
-        const SKU_MIN_LENGTH = 5;
-        const NUMERIC_BARCODE_TO_SKU_LENGTH = 7;
-        const SCAN_DEBOUNCE_MS = 1500;
-        const UPLOAD_TIMEOUT_MS = 12000;
-        const PLACEHOLDER_IMAGE = 'https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';
-
-        // --- STATE ---
+        // --- 登入與安全機制 ---
         let CURRENT_USER = '';
-        let CURRENT_SKU = '';
-        let CURRENT_RAW_INPUT = '';
-        let CURRENT_PRODUCT = null;
-        let isScanning = false;
-        let isSubmitting = false;
-        let scannerHandler = null;
-        let lastDetectedCode = '';
-        let lastDetectedAt = 0;
 
-        const $ = (id) => document.getElementById(id);
-
-        // --- USER AUTH LOGIC ---
         function checkUser() {
             const storedUser = localStorage.getItem('ifl_user');
             if (storedUser) {
                 CURRENT_USER = storedUser;
-                $('currentUserDisplay').innerText = CURRENT_USER;
-                $('loginOverlay').classList.add('hidden');
+                document.getElementById('currentUserDisplay').innerText = CURRENT_USER;
+                document.getElementById('loginOverlay').classList.add('hidden');
             } else {
-                CURRENT_USER = '';
-                $('currentUserDisplay').innerText = '...';
-                $('loginOverlay').classList.remove('hidden');
+                document.getElementById('loginOverlay').classList.remove('hidden');
             }
         }
 
         function saveUser() {
-            const val = $('loginName').value.trim();
-            if (!val) {
-                alert('請輸入櫃點/姓名');
+            const id = document.getElementById('loginId').value.trim().toUpperCase();
+            const pwd = document.getElementById('loginPwd').value.trim();
+            const err = document.getElementById('loginError');
+
+            // 防注入：只允許英文數字
+            if (!id || !pwd || !/^[A-Z0-9]+$/.test(id)) {
+                err.innerText = "請填寫正確的員工代號與密碼";
+                err.classList.remove('hidden');
                 return;
             }
-            localStorage.setItem('ifl_user', val);
-            $('loginName').value = '';
-            checkUser();
+
+            if (MEMBER_DB[id] && MEMBER_DB[id] === pwd) {
+                localStorage.setItem('ifl_user', id);
+                err.classList.add('hidden');
+                checkUser();
+            } else {
+                err.innerText = "帳號或密碼錯誤，請重新輸入";
+                err.classList.remove('hidden');
+            }
         }
 
         function logout() {
-            if (confirm('確定要更換人員登入嗎？')) {
+            if(confirm("確定要登出並更換人員嗎？")) {
                 localStorage.removeItem('ifl_user');
                 location.reload();
             }
         }
 
-        // --- COMMON UI HELPERS ---
-        function showLoading(text = '讀取中...') {
-            $('loadingText').innerText = text;
-            $('loadingOverlay').classList.remove('hidden');
-            $('loadingOverlay').classList.add('flex');
-        }
-
-        function hideLoading() {
-            $('loadingOverlay').classList.add('hidden');
-            $('loadingOverlay').classList.remove('flex');
-        }
-
-        function syncHeightDisplay(value) {
-            $('hValDispGrid').innerText = String(value);
-        }
-
-        function syncWeightDisplay(value) {
-            $('wValDispGrid').innerText = String(value);
-        }
-
-        function resetSliderValues() {
-            $('heightSlider').value = DEFAULT_HEIGHT;
-            $('weightSlider').value = DEFAULT_WEIGHT;
-            syncHeightDisplay(DEFAULT_HEIGHT);
-            syncWeightDisplay(DEFAULT_WEIGHT);
-        }
-
-        function resetProductPanels() {
-            $('statsSKU').innerText = '...';
-            $('charSKU').innerText = '...';
-            $('statsBrief').innerText = '...';
-            $('statsRGB').innerText = '-';
-            $('statsSwitch').innerText = '-';
-            $('statsHitvox').innerText = '-';
-            $('statsPain').innerText = '-';
-            $('statsAnxiety').innerText = '-';
-            $('infoRGB').innerText = '-';
-            $('infoSwitch').innerText = '-';
-            $('infoHitvox').innerText = '-';
-            $('infoBrief').innerText = '...';
-            $('statsImg').src = PLACEHOLDER_IMAGE;
-        }
-
-        function setCharacterImage(key = '') {
-            const img = $('charImg');
-            if (!key || !personas[key]) {
-                img.src = '';
-                img.classList.remove('opacity-100');
-                img.classList.add('opacity-50');
-                $('charPlaceholder').style.display = 'block';
-                return;
-            }
-
-            img.onerror = function () {
-                this.onerror = null;
-                this.src = PLACEHOLDER_IMAGE;
-            };
-            img.src = personas[key];
-            img.classList.remove('opacity-50');
-            img.classList.add('opacity-100');
-            $('charPlaceholder').style.display = 'none';
-        }
-
-        // --- QUAGGA SCANNER LOGIC ---
-        function resetScannerDetectionState() {
-            lastDetectedCode = '';
-            lastDetectedAt = 0;
-        }
-
-        function removeScannerHandler() {
-            if (scannerHandler && window.Quagga && typeof Quagga.offDetected === 'function') {
-                try {
-                    Quagga.offDetected(scannerHandler);
-                } catch (err) {
-                    console.warn('offDetected skipped:', err);
-                }
-            }
-            scannerHandler = null;
-        }
+        // --- Quagga 掃描器 (鎖死 Code 128/39 防雜訊) ---
+        let isScanning = false;
+        let scannerHandler = null;
+        let lastDetectedCode = '';
+        let lastDetectedAt = 0;
 
         function startScanner() {
             if (isScanning) return;
-            if (!window.Quagga) {
-                alert('掃描模組未載入，請重新整理頁面');
+            document.getElementById('scannerOverlay').classList.remove('hidden');
+            document.getElementById('scannerOverlay').classList.add('flex');
+            
+            lastDetectedCode = '';
+            lastDetectedAt = 0;
+
+            if (typeof Quagga === 'undefined') {
+                alert("相機模組尚未加載，請檢查網路連線");
+                stopScanner();
                 return;
             }
 
-            resetScannerDetectionState();
-            removeScannerHandler();
-            $('scannerOverlay').classList.remove('hidden');
-            $('scannerOverlay').classList.add('flex');
-
             Quagga.init({
                 inputStream: {
-                    name: 'Live',
-                    type: 'LiveStream',
-                    target: document.querySelector('#reader'),
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#reader'), 
                     constraints: {
-                        facingMode: 'environment',
-                        width: { min: 640, ideal: 1280, max: 1920 },
+                        facingMode: "environment", 
+                        width: { min: 640, ideal: 1280, max: 1920 }, 
                         height: { min: 480, ideal: 720, max: 1080 },
                         aspectRatio: { min: 1, max: 2 }
                     }
                 },
                 decoder: {
-                    readers: ['code_128_reader', 'ean_reader', 'code_39_reader', 'ean_8_reader']
+                    // 徹底移除 EAN，專心找衣服長條碼
+                    readers: ["code_128_reader", "code_39_reader"]
                 },
-                locate: true,
-                locator: {
-                    patchSize: 'medium',
-                    halfSample: true
-                }
-            }, function (err) {
+                locate: true, 
+                locator: { patchSize: "medium", halfSample: true }
+            }, function(err) {
                 if (err) {
                     console.error(err);
-                    alert('相機啟動失敗：' + err);
+                    alert("相機啟動失敗: " + err);
                     stopScanner();
                     return;
                 }
-
-                scannerHandler = function (result) {
-                    const rawCode = result?.codeResult?.code || '';
-                    if (!rawCode) return;
-
-                    const normalizedCode = normalizeRawInput(rawCode);
+                
+                scannerHandler = function(result) {
+                    const code = result?.codeResult?.code || '';
+                    if (!code) return;
+                    
+                    // 防重複掃描連發 (1.5秒內不重複處裡)
                     const now = Date.now();
-                    if (normalizedCode === lastDetectedCode && now - lastDetectedAt < SCAN_DEBOUNCE_MS) {
-                        return;
-                    }
-                    lastDetectedCode = normalizedCode;
+                    if (code === lastDetectedCode && now - lastDetectedAt < 1500) return;
+                    lastDetectedCode = code;
                     lastDetectedAt = now;
 
-                    const sku = deriveSku(rawCode);
-                    if (!sku) {
-                        console.warn('忽略無效條碼:', rawCode);
-                        return;
+                    // 長度過濾細碎雜訊
+                    if (code.length > 5) {
+                        stopScanner(); 
+                        document.getElementById('inputSKU').value = code; 
+                        handleScan(code);
                     }
-
-                    stopScanner();
-                    $('inputSKU').value = sku;
-                    handleScan(rawCode);
                 };
 
                 Quagga.onDetected(scannerHandler);
@@ -623,100 +494,104 @@
         }
 
         function stopScanner() {
-            removeScannerHandler();
-            if (isScanning && window.Quagga) {
-                try {
-                    Quagga.stop();
-                } catch (err) {
-                    console.warn('Quagga stop warning:', err);
+            if (isScanning) {
+                if (scannerHandler) {
+                    try { Quagga.offDetected(scannerHandler); } catch(e){}
+                    scannerHandler = null;
                 }
+                try { Quagga.stop(); } catch(e){}
+                isScanning = false;
             }
-            isScanning = false;
-            resetScannerDetectionState();
-            $('reader').innerHTML = '';
-            $('scannerOverlay').classList.add('hidden');
-            $('scannerOverlay').classList.remove('flex');
+            document.getElementById('reader').innerHTML = '';
+            document.getElementById('scannerOverlay').classList.add('hidden');
+            document.getElementById('scannerOverlay').classList.remove('flex');
         }
 
-        // --- DATA ---
-        const personas = {
-            Leader: './images/leader.jpg',
-            Self: './images/self.jpg',
-            CP: './images/cp.jpg'
-        };
-
-        // 請把真實商品資料逐筆補進來；沒有命中的商品，會吃 DEFAULT。
+        // --- 門市前端資料庫 (更新這區以擴充商品) ---
         const productDB = {
-            '2520201': {
-                brief: '高腰修身神褲，主打骨盆線條整理與比例拉長。',
-                rgb: 'ROOT',
-                switch: 'S',
-                hitvox: '挺',
-                atk: '修假胯',
-                def: '防撐不住',
-                image: './images/2520201.jpg'
+            'DEFAULT': { 
+                name: 'POONE 經典商品 (未建檔)',
+                brief: '百搭實穿版型，修飾亞洲女性身形。',
+                rgb: '未設定', switch: '-', hitvox: '-',
+                atk: '修飾身形', def: '防撐不住'
             },
-            'PA24SS001': {
+            '2520511': { 
+                name: 'POONE 細閃亮點V領簍空針織背心',
+                brief: '輕盈透氣簍空設計，細閃光澤提升質感。',
+                rgb: 'G+R', switch: 'W', hitvox: '柔',
+                atk: '顯鎖骨', def: '修肩頸'
+            },
+            '2520426': { 
+                name: 'POONE 經典修身西裝褲',
                 brief: '視覺少3公分神褲，針對亞洲梨形身材修正。',
-                rgb: 'R+B',
-                switch: 'S',
-                hitvox: '挺',
-                atk: '消假胯寬',
-                def: '防撐不住',
-                image: './images/PA24SS001.jpg'
-            },
-            DEFAULT: {
-                brief: '請補上此 SKU 的商品資料，避免所有商品都套用預設文案。',
-                rgb: '未設定',
-                switch: '未設定',
-                hitvox: '未設定',
-                atk: '未設定',
-                def: '未設定',
-                image: ''
+                rgb: 'R+B', switch: 'S', hitvox: '挺',
+                atk: '消假胯寬', def: '防撐不住'
             }
         };
 
+        // --- 門市話術 ---
         const FAIL_DB = {
             '六大焦慮': ['怕不專業、不會搭', '束縛感、怕太累', '不實穿、怕難顧', '怕沒質感、沒氣場', '怕顯胖、裝嫩/顯老', '捨不得、配不上'],
             '五大痛點': ['副乳、蝴蝶袖', '虎背熊腰、圓肩厚身', '胃凸、顯小腹', '梨形身材、骨盆寬', '臀部扁平、下垂', '蘿蔔O型、顯腿粗'],
             '外部因素': ['太貴、預算超支', 'CP值不夠', '顯黑', '不喜歡圖案', '沒適合尺碼', '刺癢', '太厚太薄', '逛逛無需求', '需問老公/朋友/媽媽']
         };
+        
         const PASS_DB = {
-            '六大態度': ['掌握感', '有支撐', '不後悔', '有界線', '是本我', '很值得'],
-            '痛點解決': ['修假胯', '薄背', '收腹', '藏手臂', '長腿'],
-            '成交驅動': ['設計師', '櫃姐推', '急用', '折扣']
+            '六大成交原因': ['穿起來"氣場"對了', '舒服"自在"不勒不緊', '"實穿百搭"出場率高', '材質好友"質感"', '修飾身形不顯"老氣"', '犒賞自己，我很喜歡'],
+            '痛點解決': ['修飾"梨形"身材', '肩線平順/藏副乳', '完美藏小腹', '遮住蝴蝶袖', '視覺大長腿', '穿起來不顯壯'],
+            '成交驅動': ['風格一眼就愛上', '櫃姐介紹很精準', '有場合要穿可對應', '活動打折助成交', '版型/材質超適合', '朋友/家人說好看']
         };
+        
         const QUOTES = {
-            FAIL: ['Fail 是積累。', '排除錯誤。', '再接再厲。'],
-            PASS: ['漂亮是選擇。', '體面是底氣。', '信任直覺。']
+            FAIL: ["每一次的拒絕，都是為了下次精準出擊。", "排除不適合，我們離對的客人更近。", "記錄下來，裝備重整。"],
+            PASS: ["漂亮是選擇，體面是底氣。", "精準推薦，信任直覺。", "了解客人，就能創造價值。"]
         };
 
-        // --- INIT ---
-        window.onload = function () {
-            checkUser();
+        // --- 防呆滑桿邏輯 ---
+        let isHeightAdjusted = false;
+        let isWeightAdjusted = false;
+
+        function markSliderAdjusted(type) {
+            if (type === 'height') isHeightAdjusted = true;
+            if (type === 'weight') isWeightAdjusted = true;
+            checkSliders();
+        }
+
+        function checkSliders() {
+            const btn = document.getElementById('btnConfirmChar');
+            const warning = document.getElementById('sliderWarning');
+            if (isHeightAdjusted && isWeightAdjusted) {
+                btn.classList.remove('opacity-40', 'grayscale', 'cursor-not-allowed');
+                btn.classList.add('shadow-soft', 'btn-touch');
+                btn.disabled = false;
+                if(warning) warning.classList.add('opacity-0');
+            }
+        }
+
+        // --- 啟動與列表生成 ---
+        window.onload = function() {
+            checkUser(); 
             renderList('failCats', FAIL_DB, 'fail');
             renderList('passCats', PASS_DB, 'pass');
-            resetSliderValues();
-            resetProductPanels();
-            $('inputSKU').addEventListener('keyup', function (event) {
-                if (event.key === 'Enter') handleScan(this.value);
+            document.getElementById("inputSKU").addEventListener("keyup", function(event) {
+                if (event.key === "Enter") handleScan(this.value);
             });
         };
 
         function renderList(targetId, data, type) {
-            const container = $(targetId);
-            container.innerHTML = '';
-            Object.keys(data).forEach((cat) => {
+            const container = document.getElementById(targetId);
+            const style = type === 'fail' ? 'fail-check' : 'pass-check';
+            Object.keys(data).forEach(cat => {
                 const items = data[cat].map((item, i) => `
                     <div class="relative h-full">
-                        <input type="checkbox" id="${type}_${cat}_${i}" class="${type === 'fail' ? 'fail-check' : 'pass-check'} hidden peer">
+                        <input type="checkbox" id="${type}_${cat}_${i}" class="${style} hidden peer" value="${item}">
                         <label for="${type}_${cat}_${i}" class="flex items-center justify-center text-center py-3 px-2 bg-cocoa-card border-2 border-white/10 rounded-lg text-base font-bold text-cream-dim cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none min-h-[64px] leading-tight break-words">${item}</label>
                     </div>
                 `).join('');
                 container.innerHTML += `
                     <div class="mb-6">
                         <div class="flex items-center gap-3 mb-3 pl-1">
-                            <span class="w-3 h-3 rounded-full ${type === 'fail' ? 'bg-rose-m' : 'bg-jade-m'}"></span>
+                            <span class="w-3 h-3 rounded-full ${type==='fail'?'bg-rose-m':'bg-jade-m'}"></span>
                             <span class="text-xl text-white font-black tracking-widest">${cat}</span>
                         </div>
                         <div class="grid grid-cols-2 gap-3">${items}</div>
@@ -725,295 +600,257 @@
             });
         }
 
-        // --- PRODUCT HELPERS ---
-        function normalizeRawInput(raw = '') {
-            return String(raw).toUpperCase().replace(/[\s-]/g, '');
-        }
-
-        function deriveSku(raw = '') {
-            const normalized = normalizeRawInput(raw);
-            if (!normalized || normalized.length < SKU_MIN_LENGTH) return '';
-            if (!/^[A-Z0-9]+$/.test(normalized)) return '';
-
-            // 只對純數字長條碼採用「前 7 碼為 SKU」規則；避免誤砍英數貨號。
-            if (/^\d{8,}$/.test(normalized)) {
-                return normalized.slice(0, NUMERIC_BARCODE_TO_SKU_LENGTH);
+        // --- 核心邏輯：暴力截斷防當機 ---
+        function deriveSku(rawVal) {
+            if (!rawVal) return '';
+            
+            // 處理橫線，如: 252-0426-51-F -> 取前兩段
+            if (rawVal.includes('-')) {
+                const parts = rawVal.split('-');
+                if (parts.length >= 2) {
+                    return (parts[0] + parts[1]).toUpperCase(); // 2520426
+                }
             }
-            return normalized;
+            
+            // 備用處理: 移除所有非英數字元
+            const cleaned = String(rawVal).toUpperCase().replace(/[^A-Z0-9]/g, '');
+            // 若為純數字且長度過長，強制取前7碼
+            if (cleaned.length > 7) {
+                return cleaned.substring(0, 7);
+            }
+            return cleaned;
         }
 
-        function getProductData(sku) {
-            const base = productDB.DEFAULT || {};
-            const record = productDB[sku] || {};
-            return { ...base, ...record };
-        }
-
-        function getProductImageUrl(sku, data) {
-            return data.image || `./images/${sku}.jpg`;
-        }
-
-        function fillProductUI(sku, data) {
-            const imgSrc = getProductImageUrl(sku, data);
-            const img = $('statsImg');
-            img.onerror = function () {
-                this.onerror = null;
-                this.src = PLACEHOLDER_IMAGE;
-            };
-            img.src = imgSrc;
-
-            $('statsSKU').innerText = sku;
-            $('charSKU').innerText = sku;
-            $('statsBrief').innerText = `"${data.brief}"`;
-            $('statsRGB').innerText = data.rgb;
-            $('statsSwitch').innerText = data.switch;
-            $('statsHitvox').innerText = data.hitvox;
-            $('statsPain').innerText = data.atk;
-            $('statsAnxiety').innerText = data.def;
-            $('infoRGB').innerText = data.rgb;
-            $('infoSwitch').innerText = data.switch;
-            $('infoHitvox').innerText = data.hitvox;
-            $('infoBrief').innerText = `"${data.brief}"`;
-        }
-
-        // --- LOGIC ---
         function handleScan(rawVal) {
-            const normalized = normalizeRawInput(rawVal);
-            if (!normalized) {
-                alert('請輸入或掃描貨號');
-                return;
-            }
+            if(!rawVal) return;
+            
+            // 使用嚴格的截斷邏輯
+            let sku = deriveSku(rawVal);
+            
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            document.getElementById('loadingText').innerText = "讀取中...";
+            
+            const data = productDB[sku] || productDB['DEFAULT'];
 
-            const sku = deriveSku(rawVal);
-            if (!sku) {
-                alert('貨號格式異常，請重新掃描或手動確認');
-                return;
-            }
-
-            CURRENT_RAW_INPUT = normalized;
-            CURRENT_SKU = sku;
-            CURRENT_PRODUCT = getProductData(sku);
-
-            showLoading('讀取中...');
             setTimeout(() => {
-                fillProductUI(CURRENT_SKU, CURRENT_PRODUCT);
-                hideLoading();
+                const imgEl = document.getElementById('statsImg');
+                
+                // 圖片雙重掛載：先找大寫 JPG，失敗再找小寫 jpg，再失敗跳預設
+                imgEl.onerror = function() {
+                    if (!this.dataset.retried) {
+                        this.dataset.retried = 'true';
+                        this.src = `./images/${sku}.jpg`;
+                    } else {
+                        this.onerror = null; 
+                        this.src = 'https://placehold.co/600x600/1C1C1E/D4AF37?text=Image+Not+Found';
+                    }
+                };
+                imgEl.dataset.retried = '';
+                imgEl.src = `./images/${sku}.JPG`; 
+                
+                document.getElementById('statsSKU').innerText = sku; 
+                document.getElementById('charSKU').innerText = sku;
+                
+                ['statsName', 'infoName'].forEach(id => document.getElementById(id).innerText = data.name || '未命名商品');
+                ['statsBrief', 'infoBrief'].forEach(id => document.getElementById(id).innerText = `"${data.brief || ''}"`);
+                ['statsRGB', 'infoRGB'].forEach(id => document.getElementById(id).innerText = data.rgb || '-');
+                ['statsSwitch', 'infoSwitch'].forEach(id => document.getElementById(id).innerText = data.switch || '-');
+                ['statsHitvox', 'infoHitvox'].forEach(id => document.getElementById(id).innerText = data.hitvox || '-');
+                document.getElementById('statsPain').innerText = data.atk || '-';
+                document.getElementById('statsAnxiety').innerText = data.def || '-';
+                document.getElementById('infoSKU').innerText = sku;
+
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
                 switchScene('scene_scan', 'scene_stats');
-            }, 250);
+            }, 300);
         }
-
-        function goToCharSetup() {
-            switchScene('scene_stats', 'scene_char');
-        }
-
+        
+        function goToCharSetup() { switchScene('scene_stats', 'scene_char'); }
+        
         function updateVisuals(key) {
-            setCharacterImage(key);
+            const img = document.getElementById('charImg');
+            let filename = 'leader';
+            if(key === 'Self') filename = 'self';
+            if(key === 'CP') filename = 'cp';
+            
+            img.src = `./images/${filename}.jpg`;
+            img.classList.remove('opacity-50');
+            img.classList.add('opacity-100');
+            document.getElementById('charPlaceholder').style.display = 'none';
         }
-
+        
         function confirmChar() {
             const p = document.querySelector('input[name="persona"]:checked');
             const r = document.querySelector('input[name="rgb"]:checked');
-            if (!p || !r) {
-                alert('請點選 [風格] 與 [場景]');
+            if(!p || !r) { 
+                alert('請點選 [客戶樣貌] 與 [穿著場景]'); 
+                return; 
+            }
+            if(!isHeightAdjusted || !isWeightAdjusted) {
+                alert('請確實拖拉調整顧客的「身高」與「體重」數值');
                 return;
             }
             switchScene('scene_char', 'scene_verdict');
         }
 
         function goToLog(type) {
-            $('scene_verdict').classList.add('hidden-step');
-            if (type === 'FAIL') {
-                $('scene_log_fail').classList.remove('hidden-step');
-            } else {
-                $('scene_log_pass').classList.remove('hidden-step');
-            }
-            window.scrollTo(0, 0);
+            document.getElementById('scene_verdict').classList.add('hidden-step');
+            if(type === 'FAIL') document.getElementById('scene_log_fail').classList.remove('hidden-step');
+            else document.getElementById('scene_log_pass').classList.remove('hidden-step');
         }
 
         function backToVerdict() {
-            $('scene_log_fail').classList.add('hidden-step');
-            $('scene_log_pass').classList.add('hidden-step');
-            $('scene_verdict').classList.remove('hidden-step');
-            window.scrollTo(0, 0);
+            document.getElementById('scene_log_fail').classList.add('hidden-step');
+            document.getElementById('scene_log_pass').classList.add('hidden-step');
+            document.getElementById('scene_verdict').classList.remove('hidden-step');
         }
 
-        function createEventId() {
-            return `IFL-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-        }
-
-        async function uploadPayload(payload) {
-            if (!GOOGLE_SCRIPT_URL) {
-                return { ok: true, message: '未設定 API，已略過上傳。' };
-            }
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
-
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    cache: 'no-store',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
-                    },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
-                });
-
-                const responseText = await response.text();
-                let result = {};
-                try {
-                    result = responseText ? JSON.parse(responseText) : {};
-                } catch (parseError) {
-                    throw new Error(`後端回傳非 JSON：${responseText || 'empty response'}`);
-                }
-
-                if (!response.ok) {
-                    throw new Error(result.message || `HTTP ${response.status}`);
-                }
-                if (result.ok !== true) {
-                    throw new Error(result.message || '後端未明確回傳 ok:true');
-                }
-
-                return result;
-            } finally {
-                clearTimeout(timeoutId);
-            }
-        }
-
-        async function submitLog(type) {
-            if (isSubmitting) return;
-
+        function submitLog(type) {
             const container = type === 'FAIL' ? 'failCats' : 'passCats';
             const checks = document.querySelectorAll(`#${container} input:checked`);
-            if (checks.length === 0) {
-                alert('請至少勾選一個原因');
-                return;
-            }
-            if (!CURRENT_SKU) {
-                alert('目前沒有有效商品，請重新掃描');
-                return;
-            }
+            if(checks.length === 0) { alert('請至少勾選一個原因'); return; }
 
+            const sku = document.getElementById('statsSKU').innerText; 
             const persona = document.querySelector('input[name="persona"]:checked')?.value || 'Unknown';
             const scene = document.querySelector('input[name="rgb"]:checked')?.value || 'Unknown';
-            const height = Number($('heightSlider').value);
-            const weight = Number($('weightSlider').value);
-            const reasons = Array.from(checks).map((c) => c.nextElementSibling.innerText.trim());
-            const note = type === 'FAIL' ? $('failNote').value.trim() : '';
-            const productInfo = {
-                rgb: $('infoRGB').innerText,
-                switch: $('infoSwitch').innerText,
-                hitvox: $('infoHitvox').innerText,
-                brief: $('infoBrief').innerText.replace(/^"|"$/g, '')
-            };
+            const height = document.getElementById('hValDispGrid').innerText;
+            const weight = document.getElementById('wValDispGrid').innerText;
+            const reasons = Array.from(checks).map(c => c.value).join(', ');
+            const note = type === 'FAIL' ? document.getElementById('failNote').value : '';
+            const productInfo = `[${document.getElementById('infoName').innerText}] RGB:${document.getElementById('infoRGB').innerText} / SW:${document.getElementById('infoSwitch').innerText}`;
+            const imgLink = `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${sku}.JPG`;
+
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            document.getElementById('loadingText').innerText = "資料同步中...";
 
             const payload = {
-                eventId: createEventId(),
-                submittedAt: new Date().toISOString(),
                 user: CURRENT_USER,
-                sku: CURRENT_SKU,
-                rawInput: CURRENT_RAW_INPUT,
+                sku: sku,
                 result: type,
-                persona,
-                scene,
-                height,
-                weight,
-                reasons,
-                note,
-                productInfo,
-                imgLink: `https://${GITHUB_USER}.github.io/${REPO_NAME}/images/${CURRENT_SKU}.jpg`
+                persona: persona,
+                scene: scene,
+                height: height,
+                weight: weight,
+                reasons: reasons,
+                note: note,
+                productInfo: productInfo,
+                imgLink: imgLink 
             };
 
-            isSubmitting = true;
-            showLoading('資料上傳中...');
-
-            try {
-                const result = await uploadPayload(payload);
-                showSuccessUI(type, result.message);
-            } catch (err) {
-                console.error('Upload failed:', err);
-                hideLoading();
-                alert(`上傳未確認成功：${err.message}\n\n請檢查 Google Apps Script 是否已回傳 JSON（ok:true）且允許跨網域。`);
-            } finally {
-                isSubmitting = false;
+            if (GOOGLE_SCRIPT_URL) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if(!response.ok) throw new Error('伺服器回應異常');
+                    return response.json();
+                })
+                .then(data => {
+                    if(data.result === 'success') {
+                        showSuccessUI(type);
+                    } else {
+                        throw new Error(data.message || '資料庫寫入拒絕');
+                    }
+                })
+                .catch(err => {
+                    alert("上傳失敗，請檢查網路連線或 API: " + err.message);
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    document.getElementById('loadingOverlay').classList.remove('flex');
+                });
+            } else {
+                setTimeout(() => showSuccessUI(type), 1000);
             }
         }
 
-        function showSuccessUI(type, customMessage = '') {
-            const icon = $('finalIcon');
-            const msg = $('finalMsg');
-            const title = $('finalTitle');
+        function showSuccessUI(type) {
+            const icon = document.getElementById('finalIcon');
+            const msg = document.getElementById('finalMsg');
+            const title = document.getElementById('finalTitle');
 
-            if (type === 'FAIL') {
-                icon.className = 'w-32 h-32 rounded-full border-8 border-rose-m text-rose-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5';
+            if(type === 'FAIL') {
+                icon.className = "w-32 h-32 rounded-full border-8 border-rose-m text-rose-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
                 icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>';
-                msg.innerText = customMessage || QUOTES.FAIL[Math.floor(Math.random() * QUOTES.FAIL.length)];
-                msg.className = 'text-3xl font-bold text-rose-m leading-relaxed';
-                title.innerText = '已紀錄 FAIL';
+                msg.innerText = QUOTES.FAIL[Math.floor(Math.random() * QUOTES.FAIL.length)];
+                msg.className = "text-3xl font-bold text-rose-m leading-relaxed";
+                title.innerText = "已紀錄不購買原因";
             } else {
-                icon.className = 'w-32 h-32 rounded-full border-8 border-jade-m text-jade-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5';
+                icon.className = "w-32 h-32 rounded-full border-8 border-jade-m text-jade-m flex items-center justify-center mb-6 text-7xl shadow-soft scale-0 transition-transform duration-500 bg-white/5";
                 icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
-                msg.innerText = customMessage || QUOTES.PASS[Math.floor(Math.random() * QUOTES.PASS.length)];
-                msg.className = 'text-3xl font-bold text-jade-m leading-relaxed';
-                title.innerText = '已紀錄 PASS';
+                msg.innerText = QUOTES.PASS[Math.floor(Math.random() * QUOTES.PASS.length)];
+                msg.className = "text-3xl font-bold text-jade-m leading-relaxed";
+                title.innerText = "已紀錄成交回饋";
             }
 
-            $('scene_log_fail').classList.add('hidden-step');
-            $('scene_log_pass').classList.add('hidden-step');
-            $('scene_success').classList.remove('hidden-step');
-            hideLoading();
+            document.getElementById('scene_log_fail').classList.add('hidden-step');
+            document.getElementById('scene_log_pass').classList.add('hidden-step');
+            document.getElementById('scene_success').classList.remove('hidden-step');
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('loadingOverlay').classList.remove('flex');
+            
             setTimeout(() => icon.classList.remove('scale-0'), 100);
         }
 
-        function switchScene(from, to) {
-            $(from).classList.add('hidden-step');
-            $(to).classList.remove('hidden-step');
-            window.scrollTo(0, 0);
+        function switchScene(from, to) { 
+            document.getElementById(from).classList.add('hidden-step'); 
+            document.getElementById(to).classList.remove('hidden-step'); 
+            window.scrollTo(0,0);
         }
-
+        
         function resetApp() {
-            stopScanner();
-            showLoading('重置中...');
-
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            document.getElementById('loadingText').innerText = "重置中...";
+            
             setTimeout(() => {
-                CURRENT_SKU = '';
-                CURRENT_RAW_INPUT = '';
-                CURRENT_PRODUCT = null;
+                const scenes = ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'];
+                scenes.forEach(id => document.getElementById(id).classList.add('hidden-step'));
+                
+                document.getElementById('inputSKU').value = '';
+                document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
+                document.getElementById('failNote').value = '';
+                
+                // 真重置鎖定
+                isHeightAdjusted = false;
+                isWeightAdjusted = false;
+                const btn = document.getElementById('btnConfirmChar');
+                btn.classList.add('opacity-40', 'grayscale', 'cursor-not-allowed');
+                btn.classList.remove('shadow-soft', 'btn-touch');
+                btn.disabled = true;
+                
+                const warning = document.getElementById('sliderWarning');
+                if(warning) warning.classList.remove('opacity-0');
 
-                ['scene_stats', 'scene_char', 'scene_verdict', 'scene_log_fail', 'scene_log_pass', 'scene_success'].forEach((id) => {
-                    $(id).classList.add('hidden-step');
-                });
+                document.querySelectorAll('.h-slider').forEach(el => el.value = 50);
+                document.querySelectorAll('.h-slider[min="150"]').forEach(el => el.value = 160);
+                document.getElementById('wValDispGrid').innerText = '50';
+                document.getElementById('hValDispGrid').innerText = '160';
+                
+                const img = document.getElementById('charImg');
+                img.src = '';
+                img.classList.remove('opacity-100');
+                img.classList.add('opacity-50');
+                document.getElementById('charPlaceholder').style.display = 'block';
 
-                $('inputSKU').value = '';
-                $('failNote').value = '';
-                document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach((el) => {
-                    el.checked = false;
-                });
-
-                resetSliderValues();
-                setCharacterImage('');
-                resetProductPanels();
-                $('scene_scan').classList.remove('hidden-step');
-                hideLoading();
-                window.scrollTo(0, 0);
-            }, 250);
+                document.getElementById('scene_scan').classList.remove('hidden-step');
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+            }, 400);
         }
 
         function startDictation(targetId) {
             if (window.hasOwnProperty('webkitSpeechRecognition')) {
-                const recognition = new webkitSpeechRecognition();
+                var recognition = new webkitSpeechRecognition();
                 recognition.continuous = false;
                 recognition.interimResults = false;
-                recognition.lang = 'zh-TW';
+                recognition.lang = "zh-TW";
                 recognition.start();
-                recognition.onresult = function (e) {
-                    $(targetId).value += e.results[0][0].transcript;
-                    recognition.stop();
-                };
-            } else {
-                alert('瀏覽器不支援，請手動輸入');
-            }
+                recognition.onresult = function(e) { document.getElementById(targetId).value += e.results[0][0].transcript; recognition.stop(); };
+            } else { alert("瀏覽器不支援語音輸入"); }
         }
     </script>
 </body>
