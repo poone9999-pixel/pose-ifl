@@ -116,7 +116,7 @@
             <div class="w-full space-y-6 mb-8">
                 <div>
                     <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">員工代號 (Account)</label>
-                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="例如: NEAL">
+                    <input type="text" id="loginId" class="w-full flat-input text-2xl py-2 uppercase" placeholder="XXX-X">
                 </div>
                 <div>
                     <label class="text-xs text-cream-dim uppercase tracking-wider mb-1 block">授權密碼 (Password)</label>
@@ -266,23 +266,23 @@
                 <!-- 側翼駭入佈局：左(氣質) -> 中(預覽) -> 右(場景) -->
                 <div class="flex gap-2 flex-1 min-h-[220px]">
                     <div class="w-[85px] flex flex-col gap-1.5 shrink-0">
-                        <div class="text-[9px] text-black text-center font-bold tracking-widest bg-gold-m rounded py-0.5 mb-0.5 shadow-sm">1. 氣質</div>
-                        <div class="relative flex-1"><input type="radio" name="persona" value="責任型決策" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('責任型決策')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">責任型<br>決策</span></label></div>
-                        <div class="relative flex-1"><input type="radio" name="persona" value="實用型選擇" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('實用型選擇')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">實用型<br>選擇</span></label></div>
-                        <div class="relative flex-1"><input type="radio" name="persona" value="風格審美" id="p_self" class="chk-persona hidden" onchange="updateVisuals('風格審美')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">風格<br>審美</span></label></div>
+                        <div class="text-[9px] text-black text-center font-bold tracking-widest bg-gold-m rounded py-0.5 mb-0.5 shadow-sm">1. 客戶氣質</div>
+                        <div class="relative flex-1"><input type="radio" name="persona" value="責任型決策者" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('責任型決策者')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">責任型<br>決策</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="persona" value="實用型選擇者" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('實用型選擇者')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">實用型<br>選擇</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="persona" value="風格審美者" id="p_self" class="chk-persona hidden" onchange="updateVisuals('風格審美者')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">風格<br>審美</span></label></div>
                     </div>
 
                     <div class="flex-1 relative bg-black border border-white/10 rounded overflow-hidden shadow-inner flex flex-col">
                         <img id="charImg" src="" class="w-full h-full object-cover opacity-50 transition-opacity duration-300 absolute inset-0">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                             <div id="charPlaceholder" class="text-white/80 text-xs font-bold bg-black/70 px-3 py-2 rounded text-center leading-relaxed backdrop-blur-sm border border-white/10">
-                                <span class="text-gold-m">STEP 1</span> 點選左側氣質<br>↓<br><span class="text-scene-blue">STEP 2</span> 點選右側場景
+                                <span class="text-gold-m">先輸入客戶身高體重</span><br>↓<br><span class="text-gold-m">STEP 1</span> 點選左側氣質<br>↓<br><span class="text-scene-blue">STEP 2</span> 點選右側場景
                             </div>
                         </div>
                     </div>
 
                     <div class="w-[85px] flex flex-col gap-1.5 shrink-0">
-                        <div class="text-[9px] text-black text-center font-bold tracking-widest bg-scene-blue rounded py-0.5 mb-0.5 shadow-sm">2. 場景</div>
+                        <div class="text-[9px] text-black text-center font-bold tracking-widest bg-scene-blue rounded py-0.5 mb-0.5 shadow-sm">2. 需求場景</div>
                         <div class="relative flex-1"><input type="radio" name="rgb" value="職場與正式" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">職場與<br>正式</span></label></div>
                         <div class="relative flex-1"><input type="radio" name="rgb" value="日常與休閒" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">日常與<br>休閒</span></label></div>
                         <div class="relative flex-1"><input type="radio" name="rgb" value="聚會與儀式" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">聚會與<br>儀式</span></label></div>
@@ -291,7 +291,7 @@
             </div>
 
             <div class="sticky-footer shrink-0">
-                <button id="btnConfirmChar" onclick="confirmChar()" class="w-full py-4 bg-cream text-cocoa-dark font-black text-xl rounded tracking-widest transition-all duration-300 opacity-30 grayscale cursor-not-allowed" disabled>
+                <button id="btnConfirmChar" onclick="confirmChar()" class="w-full py-4 bg-red text-cocoa-dark font-black text-xl rounded tracking-widest transition-all duration-300 opacity-30 grayscale cursor-not-allowed" disabled>
                     鎖定：試穿成交回饋
                 </button>
             </div>
@@ -766,8 +766,8 @@
         function updateVisuals(key) {
             const img = $('charImg');
             let filename = 'leader';
-            if(key === '風格審美') filename = 'self';
-            if(key === '實用型選擇') filename = 'cp';
+            if(key === '風格審美者') filename = 'self';
+            if(key === '實用型選擇者') filename = 'cp';
             
             img.src = `./images/${filename}.jpg`;
             img.classList.remove('opacity-50');
