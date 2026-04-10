@@ -267,9 +267,9 @@
                 <div class="flex gap-2 flex-1 min-h-[220px]">
                     <div class="w-[85px] flex flex-col gap-1.5 shrink-0">
                         <div class="text-[9px] text-black text-center font-bold tracking-widest bg-gold-m rounded py-0.5 mb-0.5 shadow-sm">1. 客戶氣質</div>
-                        <div class="relative flex-1"><input type="radio" name="persona" value="責任型決策者" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('責任型決策者')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">責任型<br>決策</span></label></div>
-                        <div class="relative flex-1"><input type="radio" name="persona" value="實用型選擇者" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('實用型選擇者')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">實用型<br>選擇</span></label></div>
-                        <div class="relative flex-1"><input type="radio" name="persona" value="風格審美者" id="p_self" class="chk-persona hidden" onchange="updateVisuals('風格審美者')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">風格<br>審美</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="persona" value="責任型決策者" id="p_leader" class="chk-persona hidden" onchange="updateVisuals('責任型決策者')"><label for="p_leader" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[15px] font-black leading-tight">責任型<br>決策者</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="persona" value="實用型選擇者" id="p_cp" class="chk-persona hidden" onchange="updateVisuals('實用型選擇者')"><label for="p_cp" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[15px] font-black leading-tight">實用型<br>選擇者</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="persona" value="風格審美者" id="p_self" class="chk-persona hidden" onchange="updateVisuals('風格審美者')"><label for="p_self" class="btn-persona w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[15px] font-black leading-tight">風格<br>審美者</span></label></div>
                     </div>
 
                     <div class="flex-1 relative bg-black border border-white/10 rounded overflow-hidden shadow-inner flex flex-col">
@@ -283,9 +283,9 @@
 
                     <div class="w-[85px] flex flex-col gap-1.5 shrink-0">
                         <div class="text-[9px] text-black text-center font-bold tracking-widest bg-scene-blue rounded py-0.5 mb-0.5 shadow-sm">2. 需求場景</div>
-                        <div class="relative flex-1"><input type="radio" name="rgb" value="職場與正式" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">職場與<br>正式</span></label></div>
-                        <div class="relative flex-1"><input type="radio" name="rgb" value="日常與休閒" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">日常與<br>休閒</span></label></div>
-                        <div class="relative flex-1"><input type="radio" name="rgb" value="聚會與儀式" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[13px] font-black leading-tight">聚會與<br>儀式</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="rgb" value="職場與正式" id="rgb_r" class="chk-scene hidden"><label for="rgb_r" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[15px] font-black leading-tight">職場與<br>正式</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="rgb" value="日常與休閒" id="rgb_b" class="chk-scene hidden"><label for="rgb_b" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[15px] font-black leading-tight">日常與<br>休閒</span></label></div>
+                        <div class="relative flex-1"><input type="radio" name="rgb" value="聚會與儀式" id="rgb_g" class="chk-scene hidden"><label for="rgb_g" class="btn-scene w-full h-full rounded flex flex-col items-center justify-center cursor-pointer text-center px-1 border-white/20"><span class="text-[15px] font-black leading-tight">聚會與<br>儀式</span></label></div>
                     </div>
                 </div>
             </div>
@@ -620,20 +620,20 @@
                     
                     <div class="grid grid-cols-10 gap-2 mt-1">
                         <div class="col-span-3 bg-[#1C1C1E] border border-white/10 rounded p-1.5 flex flex-col items-center justify-center">
-                            <div class="text-[9px] text-cream-dim font-bold mb-0.5 tracking-wider">RGB</div>
+                            <div class="text-[9px] text-cream-dim font-bold mb-0.5 tracking-wider">R/G/B</div>
                             <div class="text-sm font-black text-gold-m text-center leading-tight tracking-wide">${data.rgb}</div>
                         </div>
                         <div class="col-span-3 bg-[#1C1C1E] border border-white/10 rounded p-1.5 flex flex-col items-center justify-center">
-                            <div class="text-[9px] text-cream-dim font-bold mb-0.5 tracking-wider">版型</div>
+                            <div class="text-[9px] text-cream-dim font-bold mb-0.5 tracking-wider">衣服版型</div>
                             <div class="text-sm font-black text-white text-center leading-tight tracking-wide">${data.hitvox}</div>
                         </div>
                         <div class="col-span-4 bg-[#1C1C1E] border border-white/10 rounded p-1.5 flex flex-col justify-center gap-1">
                             <div class="flex items-start justify-between px-1 gap-1">
-                                <span class="text-[9px] text-rose-m font-bold mt-0.5 tracking-wider">ATK</span>
+                                <span class="text-[9px] text-rose-m font-bold mt-0.5 tracking-wider">抗焦慮</span>
                                 <span class="text-[10px] text-white font-bold leading-tight text-right flex-1 break-words">${data.atk}</span>
                             </div>
                             <div class="flex items-start justify-between px-1 gap-1">
-                                <span class="text-[9px] text-jade-m font-bold mt-0.5 tracking-wider">DEF</span>
+                                <span class="text-[9px] text-jade-m font-bold mt-0.5 tracking-wider">解痛點</span>
                                 <span class="text-[10px] text-white font-bold leading-tight text-right flex-1 break-words">${data.def}</span>
                             </div>
                         </div>
@@ -699,7 +699,7 @@
                 const items = data[cat].map((item, i) => `
                     <div class="relative h-full">
                         <input type="checkbox" id="${type}_${cat}_${i}" class="${style} hidden peer" value="${item}">
-                        <label for="${type}_${cat}_${i}" class="flex items-center justify-center text-center py-2 px-1 bg-cocoa-card border border-white/10 rounded text-[13px] font-bold text-cream-dim cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none min-h-[50px] leading-tight break-words">${item}</label>
+                        <label for="${type}_${cat}_${i}" class="flex items-center justify-center text-center py-2 px-1 bg-cocoa-card border border-white/10 rounded text-[18px] font-bold text-cream-dim cursor-pointer transition-all peer-checked:shadow-soft active:bg-white/5 select-none min-h-[50px] leading-tight break-words">${item}</label>
                     </div>
                 `).join('');
                 container.innerHTML += `
