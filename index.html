@@ -87,6 +87,7 @@
         
         .sticky-footer { background: #1C1C1E; padding: 0.75rem; border-top: 1px solid rgba(255,255,255,0.1); z-index: 50; }
         .sticky-header { background: #1C1C1E; z-index: 30; padding-top: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .text-outline { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 
         /* 掃描器樣式 */
         #reader video { width: 100%; height: 100%; object-fit: cover; }
@@ -364,7 +365,8 @@
 
             <div class="flex-1 flex flex-col justify-start gap-4 w-full min-h-[250px] shrink-0 pb-6">
                 
-                <div class="w-full bg-[#1C1C1E] border-2 border-white/10 rounded-xl p-4 shadow-inner relative overflow-hidden" id="rewardBox">
+                <!-- 加入 shrink-0 保護戰績框不被壓縮 -->
+                <div class="w-full bg-[#1C1C1E] border-2 border-white/10 rounded-xl p-4 shadow-inner relative overflow-hidden shrink-0" id="rewardBox">
                     <div class="flex justify-between items-end mb-2 relative z-10">
                         <span class="text-xs text-cream-dim font-bold tracking-widest">十件回報戰力補給</span>
                         <span class="text-xl font-black text-gold-m"><span id="rewardProgress">0</span> <span class="text-sm text-white/50">/ 10</span></span>
@@ -372,7 +374,7 @@
                     <div class="w-full h-3 bg-black rounded-full overflow-hidden border border-white/10 relative z-10">
                         <div id="rewardBar" class="h-full bg-gradient-to-r from-gold-m to-rose-m transition-all duration-1000 ease-out" style="width: 0%;"></div>
                     </div>
-                    <p id="rewardText" class="text-[10px] text-white/50 mt-2 text-center tracking-widest relative z-10">持續武裝，累積品牌戰略數據</p>
+                    <p id="rewardText" class="text-[10px] text-white/50 mt-2 text-center tracking-widest relative z-10 leading-relaxed">持續武裝，累積品牌戰略數據</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -397,7 +399,7 @@
                     </div>
                 </div>
                 
-                <button onclick="resetApp()" class="w-full py-4 bg-white/10 text-white font-black text-xl tracking-[0.2em] rounded-xl hover:bg-white/20 transition-all border border-white/20 shrink-0 mt-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] active:scale-95">下一位 (NEXT)</button>
+                <button onclick="resetApp()" class="w-full py-4 bg-white/10 text-white font-black text-xl tracking-[0.2em] rounded-xl hover:bg-white/20 transition-all border border-white/20 shrink-0 mt-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] active:scale-95">再回報下一款 (NEXT)</button>
             </div>
         </div>
 
@@ -911,7 +913,7 @@
             const rewardText = $('rewardText');
             if (isRewardUnlocked) {
                 rewardBox.classList.add('reward-glow');
-                rewardText.innerHTML = "🎉 達成 10 件回報！戰力補給已解鎖！";
+                rewardText.innerHTML = "🎉 達成 10 件回報！<br>戰力補給已解鎖！";
                 rewardText.classList.add('text-gold-m', 'font-bold');
             } else {
                 rewardBox.classList.remove('reward-glow');
